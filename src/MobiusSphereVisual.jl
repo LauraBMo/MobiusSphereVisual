@@ -68,38 +68,19 @@ end
 Generate a minimal, robust .ini file.
 """
 function generate_pov_ini(output_dir::String, nframes::Int, resolution::Tuple{Int,Int})
-    ini_content = """
-Input_File_Name="mobius.pov"
-Output_File_Name="frame_"
-Output_File_Type=N ; PNG, numbered as frame_0001.png, frame_0002.png, ...
+    template_path = joinpath(ASSETS_DIR, "render.ini")
+    if !isfile(template_path)
+        error("Missing template: $template_path")
+    end
 
-Width=$(resolution[1])
-Height=$(resolution[2])
-
-Antialias=On
-Antialias_Depth=3
-Sampling_Method=2
-Antialias_Threshold=0.05
-
-;; # +W1920 +H1080
-+A0.1
-+AM2 +R3
-+Q09
-+UA
-
-; === Animation settings ===
-Initial_Frame=1
-Final_Frame=$nframes
-Initial_Clock=0
-Final_Clock=1
-Cyclic_Animation=Off
-Pause_when_Done=Off
-
-; === Performance tuning ===
-Bounding=Off
-Display=Off
-Verbose=Off
-"""
+    template = read(template_path, String)
+    ini_content = replace(
+        template,
+        "@INPUT_FILE@" => "mobius.pov",
+        "@WIDTH@" => string(resolution[1]),
+        "@HEIGHT@" => string(resolution[2]),
+        "@FINAL_FRAME@" => string(nframes),
+    )
     ini_path = joinpath(output_dir, "render.ini")
     write(ini_path, ini_content)
     # return ini_path
