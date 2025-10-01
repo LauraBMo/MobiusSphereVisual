@@ -13,6 +13,7 @@ MobiusSphereVisual.example_loxodromic_animation()
 println("Creating custom transformation...")
 v = normalize([1.0, 1.0, 0.0])  # diagonal axis
 theta = π/3
+# Angles are still provided in radians; the library converts them to degrees for POV-Ray.
 t = [0.5, 0.0, 0.5]  # diagonal translation
 
 success = MobiusSphereVisual.render_mobius_animation(

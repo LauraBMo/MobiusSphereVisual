@@ -33,6 +33,7 @@ end
 
 Generate a single POV-Ray file using a template with placeholders.
 Relies on POV-Ray's Axis_Rotate_Trans and built-in textures.
+`theta` should be provided in radians; it is converted to degrees for POV-Ray.
 """
 function generate_pov_scene(v::Vector{Float64}, theta::Float64, t::Vector{Float64}, output_dir::String)
     template_path = joinpath(ASSETS_DIR, "mobius_template.pov")
@@ -41,12 +42,13 @@ function generate_pov_scene(v::Vector{Float64}, theta::Float64, t::Vector{Float6
     end
 
     template = read(template_path, String)
+    theta_deg = Base.rad2deg(theta)
 
     # Replace placeholders
     vars = ["X", "Y", "Z"]
     pov_code = replace(template,
                        (("@V_" .* vars .* "@") .=> string.(v))...,
-                           "@THETA@" => string(theta),
+                           "@THETA@" => string(theta_deg),
                        (("@T_" .* vars .* "@") .=> string.(t))...
         # "@V_X@" => string(v[1]),
         # "@V_Y@" => string(v[2]),
@@ -91,6 +93,7 @@ end
     render_mobius_animation(v, theta, t; output="mobius.mp4", fps=30, resolution=(1280,720), nframes=150)
 
 Render a Möbius sphere animation in the style of "Möbius Transformations Revealed".
+`theta` is specified in radians and converted to degrees for the POV-Ray scene.
 """
 function render_mobius_animation(
     v::Vector{Float64},
