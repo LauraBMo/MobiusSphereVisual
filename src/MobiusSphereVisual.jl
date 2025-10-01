@@ -11,12 +11,23 @@ const ASSETS_DIR = joinpath(@__DIR__, "..", "assets")
 """
     validate_inputs(v, theta, t)
 
-Ensure v is a 3D unit vector; normalize if needed. Ensure t is 3D.
+Ensure `v` is a 3D unit vector (normalizing if needed) and `t` is a 3D
+vector. The inputs are coerced to floating-point vectors so callers can pass
+integer vectors without hitting a `MethodError`. Returns the normalized axis,
+the translation vector, and a floating-point rotation angle.
 """
-function validate_inputs(v::Vector{Float64}, theta::Float64, t::Vector{Float64})
+function validate_inputs(
+    v::AbstractVector{<:Real},
+    theta::Real,
+    t::AbstractVector{<:Real}
+)
     if length(v) != 3 || length(t) != 3
         throw(ArgumentError("v and t must be 3D vectors"))
     end
+
+    v = collect(float.(v))
+    t = collect(float.(t))
+
     v_norm = norm(v)
     if isapprox(v_norm, 0.0; atol=1e-12)
         throw(ArgumentError("Rotation axis v cannot be zero vector"))
@@ -25,7 +36,7 @@ function validate_inputs(v::Vector{Float64}, theta::Float64, t::Vector{Float64})
         @warn "Normalizing non-unit rotation axis"
         v ./= v_norm
     end
-    return v
+    return v, t, float(theta)
 end
 
 """
@@ -34,7 +45,12 @@ end
 Generate a single POV-Ray file using a template with placeholders.
 Relies on POV-Ray's Axis_Rotate_Trans and built-in textures.
 """
-function generate_pov_scene(v::Vector{Float64}, theta::Float64, t::Vector{Float64}, output_dir::String)
+function generate_pov_scene(
+    v::AbstractVector{<:Real},
+    theta::Real,
+    t::AbstractVector{<:Real},
+    output_dir::String
+)
     template_path = joinpath(ASSETS_DIR, "mobius_template.pov")
     if !isfile(template_path)
         error("Missing template: $template_path")
@@ -44,10 +60,13 @@ function generate_pov_scene(v::Vector{Float64}, theta::Float64, t::Vector{Float6
 
     # Replace placeholders
     vars = ["X", "Y", "Z"]
+    v_strings = string.(float.(v))
+    t_strings = string.(float.(t))
+    theta = float(theta)
     pov_code = replace(template,
-                       (("@V_" .* vars .* "@") .=> string.(v))...,
+                       (("@V_" .* vars .* "@") .=> v_strings)...,
                            "@THETA@" => string(theta),
-                       (("@T_" .* vars .* "@") .=> string.(t))...
+                       (("@T_" .* vars .* "@") .=> t_strings)...
         # "@V_X@" => string(v[1]),
         # "@V_Y@" => string(v[2]),
         # "@V_Z@" => string(v[3]),
@@ -112,15 +131,15 @@ end
 Render a Möbius sphere animation in the style of "Möbius Transformations Revealed".
 """
 function render_mobius_animation(
-    v::Vector{Float64},
-    theta::Float64,
-    t::Vector{Float64};
+    v::AbstractVector{<:Real},
+    theta::Real,
+    t::AbstractVector{<:Real};
     output::String="mobius.mp4",
     fps::Int=30,
     resolution::Tuple{Int,Int}=(1280, 720),
     nframes::Int=150
 )
-    v = validate_inputs(v, theta, t)
+    v, t, theta = validate_inputs(v, theta, t)
 
 
     # mktempdir() do output_dir
