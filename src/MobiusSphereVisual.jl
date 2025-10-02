@@ -190,6 +190,12 @@ function render_mobius_animation(
 )
     v = validate_inputs(v, theta, t)
 
+    output_path = abspath(output)
+    parent_dir = dirname(output)
+    if parent_dir != "."
+        mkpath(dirname(output_path))
+    end
+
 
     # mktempdir() do output_dir
     output_dir = mktempdir()
@@ -197,9 +203,9 @@ function render_mobius_animation(
     ini_file = generate_pov_ini(output_dir, nframes, resolution)
     povraycall(output_dir, v, theta, t, ini_file)
 
-    ffmpegcall(output_dir, output, fps, resolution)
+    ffmpegcall(output_dir, output_path, fps, resolution)
 
-    @info "Animation saved to: $output in $output_dir/$output"
+    @info "Animation saved to: $output_path"
     # Optionally keep temp dir for debugging by commenting out:
     # rm(output_dir, recursive=true)
 end
@@ -218,7 +224,7 @@ end
 
 function ffmpegcall(
     output_dir,
-    output::String="mobius.mp4",
+    output_path::String="mobius.mp4",
     fps::Int=30,
     resolution::Tuple{Int,Int}=(1280, 720),
 )
@@ -227,10 +233,10 @@ function ffmpegcall(
 
     # Convert to video
     @info "Creating video with ffmpeg..."
-    if endswith(output, ".mp4")
-        cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -c:v libx264 -pix_fmt yuv420p $output`
-    elseif endswith(output, ".gif")
-        cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -vf "fps=$fps,scale=$(resolution[1]):$(resolution[2]):flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" $output`
+    if endswith(output_path, ".mp4")
+        cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -c:v libx264 -pix_fmt yuv420p $output_path`
+    elseif endswith(output_path, ".gif")
+        cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -vf "fps=$fps,scale=$(resolution[1]):$(resolution[2]):flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" $output_path`
     else
         error("Unsupported output format. Use .mp4 or .gif")
     end
