@@ -253,7 +253,9 @@ end
 Render a Möbius sphere animation in the style of "Möbius Transformations Revealed".
 `theta` is specified in radians and converted to degrees for the POV-Ray scene.
 The `quality` keyword toggles coordinated POV-Ray and ffmpeg presets ranging
-from `:draft` (fastest) to `:high` (default, best fidelity).
+from `:draft` (fastest) to `:high` (default, best fidelity). Set `keep_temp=true`
+to retain the rendered frame directory alongside the exported video for
+debugging or post-processing.
 """
 function render_mobius_animation(
     v::Vector{Float64},
@@ -264,31 +266,39 @@ function render_mobius_animation(
     resolution::Tuple{Int,Int}=(1280, 720),
     nframes::Int=150,
     quality::Symbol=:high,
+    keep_temp::Bool=false,
 )
     v = validate_inputs(v, theta, t)
 
     output_path = abspath(output)
-    parent_dir = dirname(output)
+    parent_dir = dirname(output_path)
     if parent_dir != "."
-        mkpath(dirname(output_path))
+        mkpath(parent_dir)
     end
 
+    preserved_dir = Ref{Union{Nothing,String}}(nothing)
+    mktempdir() do output_dir
+        ini_file = generate_pov_ini(output_dir, nframes, resolution; quality=quality)
+        povraycall(output_dir, v, theta, t, ini_file)
 
-    # mktempdir() do output_dir
-    output_dir = mktempdir()
+        ffmpegcall(output_dir, output_path, fps, resolution, quality)
 
-    ini_file = generate_pov_ini(output_dir, nframes, resolution; quality=quality)
-    povraycall(output_dir, v, theta, t, ini_file)
+        if keep_temp
+            dest_dir = derived_temp_destination(output_path)
+            if ispath(dest_dir)
+                rm(dest_dir; recursive=true)
+            end
+            cp(output_dir, dest_dir; force=true)
+            preserved_dir[] = dest_dir
+            @info "Preserved temporary frames at: $dest_dir"
+        end
+    end
 
-<<<<<<< HEAD
-    ffmpegcall(output_dir, output, fps, resolution, quality)
-=======
-    ffmpegcall(output_dir, output_path, fps, resolution)
->>>>>>> codex/replace-write_motion-with-render_mobius_animation
+    if keep_temp && !isnothing(preserved_dir[])
+        @info "Temporary assets copied to: $(preserved_dir[])"
+    end
 
     @info "Animation saved to: $output_path"
-    # Optionally keep temp dir for debugging by commenting out:
-    # rm(output_dir, recursive=true)
 end
 
 """
@@ -315,22 +325,20 @@ function ffmpegcall(
 
     # Convert to video
     @info "Creating video with ffmpeg..."
-<<<<<<< HEAD
-    if endswith(output, ".mp4")
-        settings = quality_settings(quality).ffmpeg
-        cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -c:v libx264 -preset $(settings.preset) -crf $(settings.crf) -pix_fmt yuv420p $output`
-    elseif endswith(output, ".gif")
-        cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -vf "fps=$fps,scale=$(resolution[1]):$(resolution[2]):flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" $output`
-=======
     if endswith(output_path, ".mp4")
-        cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -c:v libx264 -pix_fmt yuv420p $output_path`
+        settings = quality_settings(quality).ffmpeg
+        cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -c:v libx264 -preset $(settings.preset) -crf $(settings.crf) -pix_fmt yuv420p $output_path`
     elseif endswith(output_path, ".gif")
         cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -vf "fps=$fps,scale=$(resolution[1]):$(resolution[2]):flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" $output_path`
->>>>>>> codex/replace-write_motion-with-render_mobius_animation
     else
         error("Unsupported output format. Use .mp4 or .gif")
     end
     run(Cmd(cmd, dir=output_dir))
+end
+
+function derived_temp_destination(output_path::AbstractString)
+    stem, _ = splitext(basename(output_path))
+    return joinpath(dirname(output_path), "$(stem)_frames")
 end
 
 function povraycall(
