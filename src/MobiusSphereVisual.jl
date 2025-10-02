@@ -180,6 +180,11 @@ function render_mobius_animation(
 )
     v = validate_inputs(v, theta, t)
 
+    output_path = abspath(output)
+    parent_dir = dirname(output_path)
+    if parent_dir != "."
+        mkpath(parent_dir)
+    end
 
     # mktempdir() do output_dir
     output_dir = mktempdir()
@@ -187,9 +192,9 @@ function render_mobius_animation(
     ini_file = generate_pov_ini(output_dir, nframes, resolution; quality=quality)
     povraycall(output_dir, v, theta, t, ini_file)
 
-    ffmpegcall(output_dir, output, fps, resolution, quality)
+    ffmpegcall(output_dir, output_path, fps, resolution, quality)
 
-    @info "Animation saved to: $output in $output_dir/$output"
+    @info "Animation saved to: $output_path"
     # Optionally keep temp dir for debugging by commenting out:
     # rm(output_dir, recursive=true)
 end
