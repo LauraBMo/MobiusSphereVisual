@@ -1,12 +1,15 @@
 using MobiusSphereVisual
 
-# Define transformation
+# Define transformation parameters
 axis = [0.0, 0.0, 1.0]
-angle = pi/2
+angle = pi / 2
 trans = [0.2, 0.0, 0.0]
 
-# Write motion
-write_motion("pov/Motion.inc", axis, angle, trans)
+# Render the animation directly with the high level helper
+render_mobius_animation(axis, angle, trans; output="examples/demo.mp4", nframes=120)
 
-# Run POV-Ray + ffmpeg
-run_animation("pov/scene.pov", output="examples/demo.mp4", frames=120)
+# If you already have Möbius coefficients (for example from the MobiusSphere
+# package) you can pass them in as a named tuple or struct with `axis`, `angle`
+# and `translation` fields:
+coefficients = (axis = axis, angle = angle, translation = trans)
+render_mobius_animation(coefficients; output="examples/demo_from_coeffs.mp4", nframes=120)

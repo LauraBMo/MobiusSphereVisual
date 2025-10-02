@@ -4,7 +4,94 @@ using Printf
 using LinearAlgebra
 using FileIO
 
-export render_mobius_animation
+export render_mobius_animation, coerce_motion_parameters
+
+const AXIS_KEYS = (:v, :axis, :rotation_axis)
+const ANGLE_KEYS = (:theta, :angle, :rotation_angle)
+const TRANSLATION_KEYS = (:t, :translation, :offset, :translation_vector)
+
+function _has_coeff_key(data, key)
+    if data isa NamedTuple
+        return haskey(data, key)
+    elseif data isa AbstractDict
+        return haskey(data, key)
+    else
+        return Base.hasproperty(data, key)
+    end
+end
+
+function _get_coeff_value(data, key)
+    if data isa NamedTuple
+        return getfield(data, key)
+    elseif data isa AbstractDict
+        return data[key]
+    else
+        return getproperty(data, key)
+    end
+end
+
+function _coerce_vector(value, label)
+    if value isa AbstractVector
+        vec = Float64.(collect(value))
+    elseif value isa Tuple
+        vec = Float64.(collect(value))
+    else
+        throw(ArgumentError("Expected $label to be a 3-element vector or tuple, got $(typeof(value))"))
+    end
+    if length(vec) != 3
+        throw(ArgumentError("Expected $label to have length 3, got $(length(vec))"))
+    end
+    return vec
+end
+
+function _coerce_angle(value)
+    try
+        return Float64(value)
+    catch
+        throw(ArgumentError("Expected angle to be convertible to Float64, got $(typeof(value))"))
+    end
+end
+
+function _extract_coeff_component(data, keys, label)
+    for key in keys
+        if _has_coeff_key(data, key)
+            return _get_coeff_value(data, key)
+        end
+    end
+    throw(ArgumentError("Could not find $label in the provided coefficients. Expected one of: $(join(string.(keys), ", "))."))
+end
+
+"""
+    coerce_motion_parameters(data)
+
+Normalize motion information that may come from the `MobiusSphere` package.
+Accepts named tuples, dictionaries or structs that expose any of the
+following field names:
+
+- axis: `:v`, `:axis`, `:rotation_axis`
+- angle: `:theta`, `:angle`, `:rotation_angle`
+- translation: `:t`, `:translation`, `:offset`, `:translation_vector`
+
+Returns a tuple `(v, theta, t)` where the vectors are `Vector{Float64}` and
+`theta` is a `Float64`.
+"""
+function coerce_motion_parameters(data)
+    if data isa Tuple && length(data) == 3
+        v = _coerce_vector(data[1], "rotation axis")
+        theta = _coerce_angle(data[2])
+        t = _coerce_vector(data[3], "translation")
+        return v, theta, t
+    end
+
+    axis_value = _extract_coeff_component(data, AXIS_KEYS, "rotation axis")
+    angle_value = _extract_coeff_component(data, ANGLE_KEYS, "rotation angle")
+    translation_value = _extract_coeff_component(data, TRANSLATION_KEYS, "translation vector")
+
+    v = _coerce_vector(axis_value, "rotation axis")
+    theta = _coerce_angle(angle_value)
+    t = _coerce_vector(translation_value, "translation vector")
+    return v, theta, t
+end
 
 const ASSETS_DIR = joinpath(@__DIR__, "..", "assets")
 
@@ -180,6 +267,12 @@ function render_mobius_animation(
 )
     v = validate_inputs(v, theta, t)
 
+    output_path = abspath(output)
+    parent_dir = dirname(output)
+    if parent_dir != "."
+        mkpath(dirname(output_path))
+    end
+
 
     # mktempdir() do output_dir
     output_dir = mktempdir()
@@ -187,16 +280,32 @@ function render_mobius_animation(
     ini_file = generate_pov_ini(output_dir, nframes, resolution; quality=quality)
     povraycall(output_dir, v, theta, t, ini_file)
 
+<<<<<<< HEAD
     ffmpegcall(output_dir, output, fps, resolution, quality)
+=======
+    ffmpegcall(output_dir, output_path, fps, resolution)
+>>>>>>> codex/replace-write_motion-with-render_mobius_animation
 
-    @info "Animation saved to: $output in $output_dir/$output"
+    @info "Animation saved to: $output_path"
     # Optionally keep temp dir for debugging by commenting out:
     # rm(output_dir, recursive=true)
 end
 
+"""
+    render_mobius_animation(coefficients; kwargs...)
+
+Convenience wrapper that accepts coefficient objects produced by the
+`MobiusSphere` package. The object must expose axis/angle/translation values
+under any of the supported field names described in [`coerce_motion_parameters`](@ref).
+"""
+function render_mobius_animation(coefficients; kwargs...)
+    v, theta, t = coerce_motion_parameters(coefficients)
+    return render_mobius_animation(v, theta, t; kwargs...)
+end
+
 function ffmpegcall(
     output_dir,
-    output::String="mobius.mp4",
+    output_path::String="mobius.mp4",
     fps::Int=30,
     resolution::Tuple{Int,Int}=(1280, 720),
     quality::Symbol=:high,
@@ -206,11 +315,18 @@ function ffmpegcall(
 
     # Convert to video
     @info "Creating video with ffmpeg..."
+<<<<<<< HEAD
     if endswith(output, ".mp4")
         settings = quality_settings(quality).ffmpeg
         cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -c:v libx264 -preset $(settings.preset) -crf $(settings.crf) -pix_fmt yuv420p $output`
     elseif endswith(output, ".gif")
         cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -vf "fps=$fps,scale=$(resolution[1]):$(resolution[2]):flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" $output`
+=======
+    if endswith(output_path, ".mp4")
+        cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -c:v libx264 -pix_fmt yuv420p $output_path`
+    elseif endswith(output_path, ".gif")
+        cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -vf "fps=$fps,scale=$(resolution[1]):$(resolution[2]):flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" $output_path`
+>>>>>>> codex/replace-write_motion-with-render_mobius_animation
     else
         error("Unsupported output format. Use .mp4 or .gif")
     end

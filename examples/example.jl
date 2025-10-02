@@ -16,18 +16,12 @@ theta = π/3
 # Angles are still provided in radians; the library converts them to degrees for POV-Ray.
 t = [0.5, 0.0, 0.5]  # diagonal translation
 
-success = MobiusSphereVisual.render_mobius_animation(
-    v, theta, t,
+MobiusSphereVisual.render_mobius_animation(
+    v, theta, t;
     output="custom_mobius.mp4",
     fps=24,
     resolution=(1920, 1080),
-    nframes=120
+    nframes=120,
 )
 
-ffmpegcall("/tmp/jl_bj6y6V/")
-
-if success
-    println("Custom animation created successfully!")
-else
-    println("Failed to create custom animation.")
-end
+println("Custom animation created successfully!")
