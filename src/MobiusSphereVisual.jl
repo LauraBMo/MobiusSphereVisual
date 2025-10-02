@@ -190,18 +190,11 @@ function generate_pov_scene(v::Vector{Float64}, theta::Float64, t::Vector{Float6
     theta_deg = Base.rad2deg(theta)
 
     # Replace placeholders
-    vars = ["X", "Y", "Z"]
+    vars = ["X@", "Y@", "Z@"]
     pov_code = replace(template,
-                       (("@V_" .* vars .* "@") .=> string.(v))...,
+                       (("@V_" .* vars) .=> string.(v))...,
                            "@THETA@" => string(theta_deg),
-                       (("@T_" .* vars .* "@") .=> string.(t))...
-        # "@V_X@" => string(v[1]),
-        # "@V_Y@" => string(v[2]),
-        # "@V_Z@" => string(v[3]),
-        # "@THETA@" => string(theta),
-        # "@T_X@" => string(t[1]),
-        # "@T_Y@" => string(t[2]),
-        # "@T_Z@" => string(t[3])
+                       (("@T_" .* vars) .=> string.(t))...
     )
 
     scene_path = joinpath(output_dir, "mobius.pov")
