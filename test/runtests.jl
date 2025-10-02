@@ -55,4 +55,24 @@ using Test
             rm(dest)
         end
     end
+
+    @testset "preserve_failure_assets" begin
+        mktempdir() do temp_dir
+            touch(joinpath(temp_dir, "frame0001.png"))
+
+            mktempdir() do final_dir
+                output = "mobius_test.mp4"
+                output_path = joinpath(final_dir, output)
+                touch(output_path)
+
+                failure_dir = MobiusSphereVisual.preserve_failure_assets(temp_dir, output, output_path)
+                @test isdir(failure_dir)
+                @test isfile(joinpath(failure_dir, "frame0001.png"))
+                @test isfile(joinpath(failure_dir, output))
+
+                rm(failure_dir; recursive=true)
+                rm(output_path)
+            end
+        end
+    end
 end

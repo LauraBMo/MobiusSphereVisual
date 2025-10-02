@@ -168,7 +168,10 @@ end
 Render a Möbius sphere animation in the style of "Möbius Transformations Revealed".
 `theta` is specified in radians and converted to degrees for the POV-Ray scene.
 The `quality` keyword toggles coordinated POV-Ray and ffmpeg presets ranging
-from `:draft` (fastest) to `:high` (default, best fidelity).
+from `:draft` (fastest) to `:high` (default, best fidelity). Set `keep_temp=true`
+to retain a copy of the temporary render directory (including the finished
+video) for debugging; on failure the retained directory also receives any
+completed video before being copied to disk.
 """
 function render_mobius_animation(
     v::Vector{Float64},
@@ -182,6 +185,9 @@ function render_mobius_animation(
     keep_temp::Bool=false,
 )
     v = validate_inputs(v, theta, t)
+
+    preserved_dir = nothing
+    output_path = nothing
 
     mktempdir() do output_dir
         try
@@ -201,8 +207,8 @@ function render_mobius_animation(
             end
             return output_path
         catch err
-            preserved_dir = preserve_temp_dir(output_dir; prefix="mobius_failure")
-            @error "Rendering failed; temporary assets retained at $(preserved_dir)." exception=(err, catch_backtrace())
+            failure_dir = preserve_failure_assets(output_dir, output, output_path)
+            @error "Rendering failed; temporary assets retained at $(failure_dir)." exception=(err, catch_backtrace())
             rethrow(err)
         end
     end
@@ -231,6 +237,20 @@ function preserve_temp_dir(output_dir::String; prefix::String)
     dest = joinpath(pwd(), string(prefix, "_", timestamp, "_", string(uuid4())))
     cp(output_dir, dest; force=true)
     return dest
+end
+
+function preserve_failure_assets(output_dir::String, output::String, output_path)
+    failure_dir = preserve_temp_dir(output_dir; prefix="mobius_failure")
+
+    if output_path !== nothing && isfile(output_path)
+        try
+            copy_output_into_preserved(failure_dir, output_path, output)
+        catch copy_err
+            @warn "Failed to copy finished output into failure directory." exception=(copy_err, catch_backtrace())
+        end
+    end
+
+    return failure_dir
 end
 
 function copy_output_into_preserved(preserved_dir::String, output_path::String, output::String)
