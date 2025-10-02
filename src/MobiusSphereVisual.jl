@@ -9,6 +9,64 @@ export render_mobius_animation
 const ASSETS_DIR = joinpath(@__DIR__, "..", "assets")
 
 """
+    quality_settings(quality)
+
+Return the rendering settings associated with `quality`.
+
+The preset controls both POV-Ray sampling quality and ffmpeg encoding
+parameters so that a single keyword can trade fidelity for faster render
+times.
+"""
+function quality_settings(quality::Symbol)
+    if quality == :draft
+        return (
+            pov = (
+                antialias = "Off",
+                antialias_depth = 1,
+                sampling_method = 1,
+                antialias_threshold = 0.3,
+                flags = "+A0.5\n+AM1 +R1\n+Q08\n+UA",
+            ),
+            ffmpeg = (
+                crf = 30,
+                preset = "veryfast",
+            ),
+        )
+    elseif quality == :medium
+        return (
+            pov = (
+                antialias = "On",
+                antialias_depth = 2,
+                sampling_method = 2,
+                antialias_threshold = 0.1,
+                flags = "+A0.2\n+AM2 +R3\n+Q09\n+UA",
+            ),
+            ffmpeg = (
+                crf = 23,
+                preset = "faster",
+            ),
+        )
+    elseif quality == :high
+        return (
+            pov = (
+                antialias = "On",
+                antialias_depth = 3,
+                sampling_method = 2,
+                antialias_threshold = 0.05,
+                flags = "+A0.1\n+AM2 +R3\n+Q09\n+UA",
+            ),
+            ffmpeg = (
+                crf = 20,
+                preset = "medium",
+            ),
+        )
+    else
+        valid = join(string.((:draft, :medium, :high)), ", ")
+        throw(ArgumentError("Unknown quality preset: $quality. Supported presets: $valid"))
+    end
+end
+
+"""
     validate_inputs(v, theta, t)
 
 Ensure v is a 3D unit vector; normalize if needed. Ensure t is 3D.
@@ -65,23 +123,35 @@ function generate_pov_scene(v::Vector{Float64}, theta::Float64, t::Vector{Float6
 end
 
 """
-    generate_pov_ini(output_dir, nframes, resolution)
+    generate_pov_ini(output_dir, nframes, resolution; quality=:high)
 
-Generate a minimal, robust .ini file.
+Generate a minimal, robust .ini file tailored to the requested quality
+preset.
 """
-function generate_pov_ini(output_dir::String, nframes::Int, resolution::Tuple{Int,Int})
+function generate_pov_ini(
+    output_dir::String,
+    nframes::Int,
+    resolution::Tuple{Int,Int};
+    quality::Symbol=:high,
+)
     template_path = joinpath(ASSETS_DIR, "render.ini")
     if !isfile(template_path)
         error("Missing template: $template_path")
     end
 
     template = read(template_path, String)
+    settings = quality_settings(quality).pov
     ini_content = replace(
         template,
         "@INPUT_FILE@" => "mobius.pov",
         "@WIDTH@" => string(resolution[1]),
         "@HEIGHT@" => string(resolution[2]),
         "@FINAL_FRAME@" => string(nframes),
+        "@ANTIALIAS@" => settings.antialias,
+        "@ANTIALIAS_DEPTH@" => string(settings.antialias_depth),
+        "@SAMPLING_METHOD@" => string(settings.sampling_method),
+        "@ANTIALIAS_THRESHOLD@" => string(settings.antialias_threshold),
+        "@POVRAY_FLAGS@" => settings.flags,
     )
     ini_path = joinpath(output_dir, "render.ini")
     write(ini_path, ini_content)
@@ -90,10 +160,13 @@ function generate_pov_ini(output_dir::String, nframes::Int, resolution::Tuple{In
 end
 
 """
-    render_mobius_animation(v, theta, t; output="mobius.mp4", fps=30, resolution=(1280,720), nframes=150)
+    render_mobius_animation(v, theta, t; output="mobius.mp4", fps=30,
+                            resolution=(1280,720), nframes=150, quality=:high)
 
 Render a Möbius sphere animation in the style of "Möbius Transformations Revealed".
 `theta` is specified in radians and converted to degrees for the POV-Ray scene.
+The `quality` keyword toggles coordinated POV-Ray and ffmpeg presets ranging
+from `:draft` (fastest) to `:high` (default, best fidelity).
 """
 function render_mobius_animation(
     v::Vector{Float64},
@@ -102,7 +175,8 @@ function render_mobius_animation(
     output::String="mobius.mp4",
     fps::Int=30,
     resolution::Tuple{Int,Int}=(1280, 720),
-    nframes::Int=150
+    nframes::Int=150,
+    quality::Symbol=:high,
 )
     v = validate_inputs(v, theta, t)
 
@@ -110,10 +184,10 @@ function render_mobius_animation(
     # mktempdir() do output_dir
     output_dir = mktempdir()
 
-    ini_file = generate_pov_ini(output_dir, nframes, resolution)
+    ini_file = generate_pov_ini(output_dir, nframes, resolution; quality=quality)
     povraycall(output_dir, v, theta, t, ini_file)
 
-    ffmpegcall(output_dir, output, fps, resolution)
+    ffmpegcall(output_dir, output, fps, resolution, quality)
 
     @info "Animation saved to: $output in $output_dir/$output"
     # Optionally keep temp dir for debugging by commenting out:
@@ -125,6 +199,7 @@ function ffmpegcall(
     output::String="mobius.mp4",
     fps::Int=30,
     resolution::Tuple{Int,Int}=(1280, 720),
+    quality::Symbol=:high,
 )
     # 🔍 Auto-detect frame numbering format
     frame_pattern = detect_frame_pattern(output_dir)
@@ -132,7 +207,8 @@ function ffmpegcall(
     # Convert to video
     @info "Creating video with ffmpeg..."
     if endswith(output, ".mp4")
-        cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -c:v libx264 -pix_fmt yuv420p $output`
+        settings = quality_settings(quality).ffmpeg
+        cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -c:v libx264 -preset $(settings.preset) -crf $(settings.crf) -pix_fmt yuv420p $output`
     elseif endswith(output, ".gif")
         cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -vf "fps=$fps,scale=$(resolution[1]):$(resolution[2]):flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" $output`
     else
