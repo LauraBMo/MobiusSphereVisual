@@ -15,7 +15,11 @@ render_mobius_animation(v, theta, t; nframes=120, quality=:medium)
 ```
 
 This command writes a temporary sequence of PNG frames with POV-Ray and stitches
-them together into `mobius.mp4` with ffmpeg.
+them together into `mobius.mp4` with ffmpeg. The finished video is moved to your
+current working directory while the intermediate frames are cleaned up. Pass
+`keep_temp=true` to retain a copy of the temporary render directory for
+debugging; if rendering fails, the directory is automatically copied to a
+`mobius_failure_…` folder so you can inspect the generated assets.
 
 ## Quality presets
 
@@ -49,6 +53,7 @@ lower detail.
 render_mobius_animation(v, theta, t; quality=:draft)   # Fast iteration
 render_mobius_animation(v, theta, t; quality=:medium)  # Balanced preview
 render_mobius_animation(v, theta, t; quality=:high)    # Final delivery
+render_mobius_animation(v, theta, t; keep_temp=true)   # Keep intermediate frames
 ```
 
 See the [documentation](https://LauraBMo.github.io/MobiusSphereVisual.jl/dev/)

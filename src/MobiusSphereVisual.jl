@@ -3,6 +3,8 @@ module MobiusSphereVisual
 using Printf
 using LinearAlgebra
 using FileIO
+using Dates
+using UUIDs
 
 export render_mobius_animation
 
@@ -177,21 +179,65 @@ function render_mobius_animation(
     resolution::Tuple{Int,Int}=(1280, 720),
     nframes::Int=150,
     quality::Symbol=:high,
+    keep_temp::Bool=false,
 )
     v = validate_inputs(v, theta, t)
 
+    mktempdir() do output_dir
+        try
+            ini_file = generate_pov_ini(output_dir, nframes, resolution; quality=quality)
+            povraycall(output_dir, v, theta, t, ini_file)
 
-    # mktempdir() do output_dir
-    output_dir = mktempdir()
+            ffmpegcall(output_dir, output, fps, resolution, quality)
 
-    ini_file = generate_pov_ini(output_dir, nframes, resolution; quality=quality)
-    povraycall(output_dir, v, theta, t, ini_file)
+            preserved_dir = maybe_preserve_temp_dir(output_dir; keep_temp=keep_temp)
+            output_path = materialize_output(output_dir, output)
 
-    ffmpegcall(output_dir, output, fps, resolution, quality)
+            if preserved_dir !== nothing
+                copy_output_into_preserved(preserved_dir, output_path, output)
+                @info "Animation saved to $(output_path). Temporary assets kept at $(preserved_dir)."
+            else
+                @info "Animation saved to $(output_path)."
+            end
+            return output_path
+        catch err
+            preserved_dir = preserve_temp_dir(output_dir; prefix="mobius_failure")
+            @error "Rendering failed; temporary assets retained at $(preserved_dir)." exception=(err, catch_backtrace())
+            rethrow(err)
+        end
+    end
+end
 
-    @info "Animation saved to: $output in $output_dir/$output"
-    # Optionally keep temp dir for debugging by commenting out:
-    # rm(output_dir, recursive=true)
+function materialize_output(output_dir::String, output::String)
+    output_path = isabspath(output) ? output : abspath(output)
+    mkpath(dirname(output_path))
+
+    source_path = joinpath(output_dir, output)
+    if source_path != output_path
+        if isfile(source_path) || isdir(source_path)
+            mv(source_path, output_path; force=true)
+        end
+    end
+    return output_path
+end
+
+function maybe_preserve_temp_dir(output_dir::String; keep_temp::Bool, prefix::String="mobius_debug")
+    keep_temp || return nothing
+    return preserve_temp_dir(output_dir; prefix=prefix)
+end
+
+function preserve_temp_dir(output_dir::String; prefix::String)
+    timestamp = Dates.format(Dates.now(), "yyyymmdd_HHMMSS")
+    dest = joinpath(pwd(), string(prefix, "_", timestamp, "_", string(uuid4())))
+    cp(output_dir, dest; force=true)
+    return dest
+end
+
+function copy_output_into_preserved(preserved_dir::String, output_path::String, output::String)
+    dest = isabspath(output) ? joinpath(preserved_dir, basename(output)) : joinpath(preserved_dir, output)
+    mkpath(dirname(dest))
+    cp(output_path, dest; force=true)
+    return dest
 end
 
 function ffmpegcall(

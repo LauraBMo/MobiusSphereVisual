@@ -16,7 +16,11 @@ Modules = [MobiusSphereVisual]
 ## Quality presets
 
 `render_mobius_animation` exposes a `quality` keyword argument so you can match
-the rendering pipeline to your iteration speed:
+the rendering pipeline to your iteration speed. The function renders into a
+temporary directory that is cleaned up automatically; pass `keep_temp=true` to
+retain the intermediate POV-Ray frames for debugging. When rendering fails, the
+library copies the directory to a `mobius_failure_…` folder so you can inspect
+the generated POV-Ray inputs and partial frames:
 
 - `:draft` disables most antialiasing for extremely fast test renders and uses a
   veryfast ffmpeg preset.
