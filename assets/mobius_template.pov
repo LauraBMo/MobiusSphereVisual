@@ -93,7 +93,7 @@ plane {
 #declare CurrentNorthPole = vtransform(BaseNorthPole, CurrentTransform);
 
 // Emissive light at current north pole
-light_source { CurrentNorthPole, rgb <1.8, 1.8, 1.2> * 0.35 }
+light_source { CurrentNorthPole, rgb <2.1, 2.1, 1.4> * 0.55 }
 
 // small visible marker for the light source
 sphere {
@@ -122,35 +122,9 @@ sphere {
 
 #declare MySphereGrid =
   union {
-    // 1. Full transparent glass sphere
-    // sphere { 0, 1
-    //   texture {
-    //     Glass
-    //     finish { ambient 0 diffuse 0.7 specular 0.2 }
-    //   }
-    //   hollow on
-    //   interior { ior 1.0 } // keep light transmission simple
-    // }
-    SphereGrid()
-    // sphere { 0.001, 1
-    //   texture {
-    //     pigment {
-    //       // rainbow stripes in longitude (phi)
-    //       gradient y
-    //       color_map {
-    //         [0.0  color rgbf <1,0,0,0.4>]   // red, translucent
-    //         [0.17 color rgbf <1,0.5,0,0.4>] // orange
-    //         [0.33 color rgbf <1,1,0,0.4>]   // yellow
-    //         [0.4 color rgbf <0,1,0,0.4>]   // green
-    //         [0.4 color rgbf <1,1,1,0>]
-    //         [1.0  color rgbf <1,1,1,0>]
-    //       }
-    //       warp { spherical }
-    //     }
-    //     // finish { ambient 0 diffuse 0.7 specular 0.6 }
-    //   }
-    //   clipped_by { plane { y,  0.4} }  // keeps y <= 0.4
-    // }
+    // Focus on the translucent argument cap so its prismatic shadow can be
+    // evaluated without the outer shell masking the effect.
+    SphereArgumentCap(pi/8, pi/8, 0.02)
   };
 
 object {
