@@ -7,13 +7,15 @@
   pigment {
     function { atan2(z,x) } // longitude angle
     color_map {
-      [0.0 rgb <1,0,0>]
-      [0.16 rgb <1,1,0>]
-      [0.33 rgb <0,1,0>]
-      [0.50 rgb <0,1,1>]
-      [0.66 rgb <0,0,1>]
-      [0.83 rgb <1,0,1>]
-      [1.0 rgb <1,0,0>]
+      // rgbf entries keep ~30% filter so transmitted light inherits the tint,
+      // letting the argument cap cast the prismatic shadow seen in the film.
+      [0.0 rgbf <1,0,0,0.3>]
+      [0.16 rgbf <1,1,0,0.3>]
+      [0.33 rgbf <0,1,0,0.3>]
+      [0.50 rgbf <0,1,1,0.3>]
+      [0.66 rgbf <0,0,1,0.3>]
+      [0.83 rgbf <1,0,1,0.3>]
+      [1.0 rgbf <1,0,0,0.3>]
     }
   }
 #end
@@ -70,22 +72,30 @@
     texture {
       RainbowPigment()
       finish {
-        ambient 0.05
-        diffuse 0.45
-        specular 0.3
-        roughness 0.01
-        brilliance 2
+        ambient 0
+        diffuse 0.12
+        specular 0.45
+        roughness 0.005
+        reflection 0.05
+        conserve_energy
       }
     }
     texture {
       GridPigment(delta_lat, delta_lon, eps)
       finish {
-        ambient 0.2
-        diffuse 0.35
-        specular 0.15
-        roughness 0.02
+        ambient 0.1
+        diffuse 0.25
+        specular 0.1
+        roughness 0.015
       }
     }
+    interior {
+      ior 1.36
+      fade_color rgb <0.8, 0.9, 1.2>
+      fade_distance 6
+      fade_power 2
+    }
+    hollow on
     clipped_by { plane { y, 0 } }
   }
 #end

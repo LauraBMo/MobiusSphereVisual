@@ -93,7 +93,7 @@ plane {
 #declare CurrentNorthPole = vtransform(BaseNorthPole, CurrentTransform);
 
 // Emissive light at current north pole
-light_source { CurrentNorthPole, rgb <1.8, 1.8, 1.2> * 0.35 }
+light_source { CurrentNorthPole, rgb <2.1, 2.1, 1.4> * 0.55 }
 
 // small visible marker for the light source
 sphere {
@@ -122,16 +122,9 @@ sphere {
 
 #declare MySphereGrid =
   union {
-    // Glass shell: Fresnel reflection + IOR=1.52 match the glinting bubble in
-    // "Möbius Transformations Revealed".
-    SphereGlassShell()
-
-    // Argument cap: rainbow pigment and pi/8 grid mirror the stereographic
-    // disk overlays from the teaching sequence.
+    // Focus on the translucent argument cap so its prismatic shadow can be
+    // evaluated without the outer shell masking the effect.
     SphereArgumentCap(pi/8, pi/8, 0.02)
-
-    // Highlight sheen: soft specular bloom echoes the film's composited glow.
-    SphereHighlightSheen()
   };
 
 object {
