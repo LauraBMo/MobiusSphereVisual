@@ -4,94 +4,7 @@ using Printf
 using LinearAlgebra
 using FileIO
 
-export render_mobius_animation, coerce_motion_parameters
-
-const AXIS_KEYS = (:v, :axis, :rotation_axis)
-const ANGLE_KEYS = (:theta, :angle, :rotation_angle)
-const TRANSLATION_KEYS = (:t, :translation, :offset, :translation_vector)
-
-function _has_coeff_key(data, key)
-    if data isa NamedTuple
-        return haskey(data, key)
-    elseif data isa AbstractDict
-        return haskey(data, key)
-    else
-        return Base.hasproperty(data, key)
-    end
-end
-
-function _get_coeff_value(data, key)
-    if data isa NamedTuple
-        return getfield(data, key)
-    elseif data isa AbstractDict
-        return data[key]
-    else
-        return getproperty(data, key)
-    end
-end
-
-function _coerce_vector(value, label)
-    if value isa AbstractVector
-        vec = Float64.(collect(value))
-    elseif value isa Tuple
-        vec = Float64.(collect(value))
-    else
-        throw(ArgumentError("Expected $label to be a 3-element vector or tuple, got $(typeof(value))"))
-    end
-    if length(vec) != 3
-        throw(ArgumentError("Expected $label to have length 3, got $(length(vec))"))
-    end
-    return vec
-end
-
-function _coerce_angle(value)
-    try
-        return Float64(value)
-    catch
-        throw(ArgumentError("Expected angle to be convertible to Float64, got $(typeof(value))"))
-    end
-end
-
-function _extract_coeff_component(data, keys, label)
-    for key in keys
-        if _has_coeff_key(data, key)
-            return _get_coeff_value(data, key)
-        end
-    end
-    throw(ArgumentError("Could not find $label in the provided coefficients. Expected one of: $(join(string.(keys), ", "))."))
-end
-
-"""
-    coerce_motion_parameters(data)
-
-Normalize motion information that may come from the `MobiusSphere` package.
-Accepts named tuples, dictionaries or structs that expose any of the
-following field names:
-
-- axis: `:v`, `:axis`, `:rotation_axis`
-- angle: `:theta`, `:angle`, `:rotation_angle`
-- translation: `:t`, `:translation`, `:offset`, `:translation_vector`
-
-Returns a tuple `(v, theta, t)` where the vectors are `Vector{Float64}` and
-`theta` is a `Float64`.
-"""
-function coerce_motion_parameters(data)
-    if data isa Tuple && length(data) == 3
-        v = _coerce_vector(data[1], "rotation axis")
-        theta = _coerce_angle(data[2])
-        t = _coerce_vector(data[3], "translation")
-        return v, theta, t
-    end
-
-    axis_value = _extract_coeff_component(data, AXIS_KEYS, "rotation axis")
-    angle_value = _extract_coeff_component(data, ANGLE_KEYS, "rotation angle")
-    translation_value = _extract_coeff_component(data, TRANSLATION_KEYS, "translation vector")
-
-    v = _coerce_vector(axis_value, "rotation axis")
-    theta = _coerce_angle(angle_value)
-    t = _coerce_vector(translation_value, "translation vector")
-    return v, theta, t
-end
+export render_mobius_animation
 
 const ASSETS_DIR = joinpath(@__DIR__, "..", "assets")
 
@@ -240,6 +153,25 @@ function generate_pov_ini(
 end
 
 """
+    copy_macros(output_dir, nframes, resolution; quality=:high)
+"""
+function copy_macros(output_dir::String)
+    _file = "macros.inc"
+    _path = joinpath(ASSETS_DIR, _file)
+    if !isfile(_path)
+        error("Missing template: $_path")
+    end
+
+    contents = read(_path, String)
+    ini_path = joinpath(output_dir, _file)
+    write(ini_path, contents)
+    # return ini_path
+    return _file
+end
+
+## v, theta, t coming from `MobiusSphere` package in form of v::Vector{T}, x::T, t::Vector{T}
+## where T may be CalciumFieldElem, T <: Real,...
+"""
     render_mobius_animation(v, theta, t; output="mobius.mp4", fps=30,
                             resolution=(1280,720), nframes=150, quality=:high)
 
@@ -271,6 +203,7 @@ function render_mobius_animation(
 
     preserved_dir = Ref{Union{Nothing,String}}(nothing)
     mktempdir() do output_dir
+        copy_macros(output_dir)
         ini_file = generate_pov_ini(output_dir, nframes, resolution; quality=quality)
         povraycall(output_dir, v, theta, t, ini_file)
 
@@ -292,18 +225,6 @@ function render_mobius_animation(
     end
 
     @info "Animation saved to: $output_path"
-end
-
-"""
-    render_mobius_animation(coefficients; kwargs...)
-
-Convenience wrapper that accepts coefficient objects produced by the
-`MobiusSphere` package. The object must expose axis/angle/translation values
-under any of the supported field names described in [`coerce_motion_parameters`](@ref).
-"""
-function render_mobius_animation(coefficients; kwargs...)
-    v, theta, t = coerce_motion_parameters(coefficients)
-    return render_mobius_animation(v, theta, t; kwargs...)
 end
 
 function ffmpegcall(
