@@ -20,14 +20,15 @@ render_mobius_animation(v, theta, t; output="examples/demo.mp4", nframes=120)
 
 ## Using coefficients from MobiusSphere.jl
 
-`MobiusSphere.jl` returns coefficient objects that carry the axis, rotation angle and translation used by the Möbius motion. The renderer accepts those objects directly, or you can turn them into raw tuples via [`coerce_motion_parameters`](@ref):
+`MobiusSphere.jl` returns coefficient objects that carry the axis, rotation angle and translation used by the Möbius motion. Destructure the triple into `(v, theta, t)` before calling the renderer so the arguments match the current method signature:
 
 ```julia
 using MobiusSphereVisual
 
-coeffs = (axis = [0.0, 0.0, 1.0], angle = pi / 2, translation = [0.2, 0.0, 0.0])
+coeffs = ([0.0, 0.0, 1.0], pi / 2, [0.2, 0.0, 0.0])
 
-render_mobius_animation(coeffs; output="examples/from_coeffs.mp4", nframes=120)
+v, theta, t = coeffs
+render_mobius_animation(v, theta, t; output="examples/from_coeffs.mp4", nframes=120)
 ```
 
 ```@autodocs
