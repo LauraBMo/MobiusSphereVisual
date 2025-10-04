@@ -18,6 +18,14 @@ t = [0.2, 0.0, 0.0]
 render_mobius_animation(v, theta, t; output="examples/demo.mp4", nframes=120)
 ```
 
+## Examples
+
+Browse `examples/example.jl` for ready-to-run scripts that render classic
+Möbius motions such as a 90° rotation or a loxodromic spiral. Each block
+shows the arguments passed directly into [`render_mobius_animation`](@ref)
+so you can tweak the vectors, angle, or keyword parameters to suit your
+own scene.
+
 ## Using coefficients from MobiusSphere.jl
 
 `MobiusSphere.jl` returns coefficient objects that carry the axis, rotation angle and translation used by the Möbius motion. Destructure the triple into `(v, theta, t)` before calling the renderer so the arguments match the current method signature:
