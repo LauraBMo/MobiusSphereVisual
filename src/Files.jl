@@ -22,7 +22,7 @@ function generate_pov_scene(
     template = read(template_path, String)
     theta_deg = Base.rad2deg(theta)
 
-    # Replace placeholders
+    # Replace placeholder tokens.
     vars = ["X@", "Y@", "Z@"]
     pov_code = replace(
         template,
@@ -72,7 +72,7 @@ function generate_pov_ini(
     )
     ini_path = joinpath(output_dir, "render.ini")
     write(ini_path, ini_content)
-    # return ini_path
+    # Return the relative path for compatibility with existing callers.
     return "render.ini"
 end
 
