@@ -76,6 +76,14 @@ function generate_pov_ini(
     return "render.ini"
 end
 
+"""
+    generate_pov(v, theta, t, output_dir, nframes, resolution; quality=:high, sampling=nothing)
+
+Create the POV-Ray scene and configuration files for an animation render.
+Returns a tuple containing the `.ini` filename and the path to the generated
+scene. Quality presets are merged with optional `sampling` overrides before
+delegating to `generate_pov_ini` and `generate_pov_scene`.
+"""
 function generate_pov(
     v::Vector{Float64},
     theta::Float64,
@@ -86,19 +94,23 @@ function generate_pov(
     quality::Symbol=:high,
     sampling::Union{Nothing,NamedTuple,Dict}=nothing,
     )
-    ## Processing kwargs
     sampling = _normalize_sampling_overrides(sampling)
     settings = merge(quality_settings(quality).pov, sampling)
     global_settings = global_settings_extra(settings)
 
-    ## Create the actual files
     ini_file = generate_pov_ini(output_dir, nframes, resolution; settings=settings)
     scene = generate_pov_scene(v, theta, t, output_dir;
                                global_settings_extra = global_settings)
-    ## Return name, path
     return ini_file, scene
 end
 
+"""
+    _normalize_sampling_overrides(sampling)
+
+Normalize sampling overrides into a `NamedTuple`. Accepts `nothing`, an
+existing `NamedTuple`, or a `Dict` whose keys are converted to symbols. Throws
+an `ArgumentError` for any other input type.
+"""
 function _normalize_sampling_overrides(sampling)
     if sampling === nothing
         return NamedTuple()
