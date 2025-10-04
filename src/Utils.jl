@@ -51,8 +51,36 @@ function quality_settings(quality::Symbol)
                 preset = "medium",
             ),
         )
+    elseif quality == :ultra
+        return (
+            pov = (
+                antialias = "On",
+                antialias_depth = 5,
+                sampling_method = 2,
+                antialias_threshold = 0.03,
+                flags = "+A0.03\n+AM2 +R5\n+Q11\n+UA\nRadiosity=On\nPhotons=On",
+            ),
+            ffmpeg = (
+                crf = 18,
+                preset = "slow",
+            ),
+        )
+    elseif quality == :film
+        return (
+            pov = (
+                antialias = "On",
+                antialias_depth = 6,
+                sampling_method = 2,
+                antialias_threshold = 0.02,
+                flags = "+A0.02\n+AM2 +R7\n+Q13\n+UA\nRadiosity=On\nPhotons=On",
+            ),
+            ffmpeg = (
+                crf = 16,
+                preset = "slower",
+            ),
+        )
     else
-        valid = join(string.((:draft, :medium, :high)), ", ")
+        valid = join(string.((:draft, :medium, :high, :ultra, :film)), ", ")
         throw(ArgumentError("Unknown quality preset: $quality. Supported presets: $valid"))
     end
 end

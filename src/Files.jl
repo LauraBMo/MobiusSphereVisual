@@ -38,6 +38,7 @@ function generate_pov_ini(
     nframes::Int,
     resolution::Tuple{Int,Int};
     quality::Symbol=:high,
+    sampling_overrides::NamedTuple=NamedTuple(),
 )
     template_path = joinpath(ASSETS_DIR, "render.ini")
     if !isfile(template_path)
@@ -45,7 +46,7 @@ function generate_pov_ini(
     end
 
     template = read(template_path, String)
-    settings = quality_settings(quality).pov
+    settings = merge(quality_settings(quality).pov, sampling_overrides)
     ini_content = replace(
         template,
         "@INPUT_FILE@" => "mobius.pov",

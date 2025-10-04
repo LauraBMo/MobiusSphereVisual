@@ -21,9 +21,12 @@ include("Files.jl")
 Render a Möbius sphere animation in the style of "Möbius Transformations Revealed".
 `theta` is specified in radians and converted to degrees for the POV-Ray scene.
 The `quality` keyword toggles coordinated POV-Ray and ffmpeg presets ranging
-from `:draft` (fastest) to `:high` (default, best fidelity). Set `keep_temp=true`
-to retain the rendered frame directory alongside the exported video for
-debugging or post-processing.
+from `:draft` (fastest) through `:film` (highest fidelity), with `:high`
+remaining the default. Set `keep_temp=true` to retain the rendered frame
+directory alongside the exported video for debugging or post-processing. When
+you need to fine-tune ray-tracing parameters beyond a preset, provide
+`sampling=(antialias="On", antialias_depth=4, sampling_method=2,
+antialias_threshold=0.05, flags="+A0.05\n+AM2 +R3")` or similar overrides.
 """
 function render_mobius_animation(
     v::Vector{Float64},
@@ -34,9 +37,13 @@ function render_mobius_animation(
     resolution::Tuple{Int,Int}=(1280, 720),
     nframes::Int=150,
     quality::Symbol=:high,
+    sampling::Union{Nothing,NamedTuple,Dict}=nothing,
     keep_temp::Bool=false,
 )
     v = validate_inputs(v, theta, t)
+
+    resolution = _validate_resolution(resolution)
+    sampling_overrides = _normalize_sampling_overrides(sampling)
 
     output_path = abspath(output)
     parent_dir = dirname(output_path)
@@ -47,7 +54,13 @@ function render_mobius_animation(
     preserved_dir = Ref{Union{Nothing,String}}(nothing)
     mktempdir() do output_dir
         copy_macros(output_dir)
-        ini_file = generate_pov_ini(output_dir, nframes, resolution; quality=quality)
+        ini_file = generate_pov_ini(
+            output_dir,
+            nframes,
+            resolution;
+            quality=quality,
+            sampling_overrides=sampling_overrides,
+        )
         povraycall(output_dir, v, theta, t, ini_file)
 
         ffmpegcall(output_dir, output_path, fps, resolution, quality)
@@ -68,6 +81,30 @@ function render_mobius_animation(
     end
 
     @info "Animation saved to: $output_path"
+end
+
+# -- Validation helpers -----------------------------------------------------
+
+function _validate_resolution(resolution::Tuple{Int,Int})
+    width, height = resolution
+    if width <= 0 || height <= 0
+        throw(ArgumentError("resolution must contain positive integers, got $resolution"))
+    end
+    return resolution
+end
+
+function _normalize_sampling_overrides(sampling)
+    if sampling === nothing
+        return NamedTuple()
+    elseif sampling isa NamedTuple
+        return sampling
+    elseif sampling isa Dict
+        return (; (Symbol(key) => value for (key, value) in sampling)...)
+    else
+        throw(ArgumentError(
+            "sampling overrides must be provided as a NamedTuple or Dict, got $(typeof(sampling))",
+        ))
+    end
 end
 
 # function ffmpegcall(
