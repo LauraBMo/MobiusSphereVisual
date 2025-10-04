@@ -1,4 +1,4 @@
-"""
+raw"""
     detect_frame_pattern(output_dir; rx=r"frame_(\d+)\.png")
 
 Scan `output_dir` for image frames and derive the printf-style pattern used by
