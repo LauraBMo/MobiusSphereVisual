@@ -31,23 +31,18 @@ v, theta, t = coeffs
 render_mobius_animation(v, theta, t; output="examples/from_coeffs.mp4", nframes=120)
 ```
 
+## Rendering guide
+
+```@contents
+Pages = [
+    "quality_presets.md",
+    "sampling_overrides.md",
+]
+Depth = 2
+```
+
+Explore the quality presets and sampling overrides for [`render_mobius_animation`](@ref) to tailor visual fidelity and render time to your project.
+
 ```@autodocs
 Modules = [MobiusSphereVisual]
 ```
-
-## Quality presets
-
-`render_mobius_animation` exposes a `quality` keyword argument so you can match
-the rendering pipeline to your iteration speed:
-
-- `:draft` disables most antialiasing for extremely fast test renders and uses a
-  veryfast ffmpeg preset.
-- `:medium` offers balanced sampling (antialias depth 2) and a faster encoder,
-  making it a good choice for sharing previews.
-- `:high` keeps the original high-quality settings (antialias depth 3, sampling
-  method 2) together with a slower `-preset medium`/`-crf 20` ffmpeg encode for
-  production output.
-
-Render time scales roughly with the antialias depth—expect `:draft` to finish in
-about a third of the time of `:high`, while `:medium` lands in between with
-noticeably smoother edges.
