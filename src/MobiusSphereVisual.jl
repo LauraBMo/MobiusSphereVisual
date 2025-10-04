@@ -16,6 +16,8 @@ include("Files.jl")
 # The vectors `v` and `t` originate from the MobiusSphere package as
 # `Vector{T}` values alongside a scalar rotation `theta::T`, where `T`
 # represents a real-like numeric type (for example `CalciumFieldElem`).
+# This wrapper narrows the signature to `Float64` inputs for a predictable
+# rendering pipeline while keeping the call surface familiar.
 """
     render_mobius_animation(v, theta, t; output="mobius.mp4", fps=30,
                             resolution=(1280,720), nframes=150, quality=:high)
@@ -45,17 +47,20 @@ function render_mobius_animation(
     sampling::Union{Nothing,NamedTuple,Dict}=nothing,
     keep_temp::Bool=false,
 )
+    # Ensure the axis, angle, and translation parameters are well formed.
     v = validate_inputs(v, theta, t)
     resolution = _validate_resolution(resolution)
 
     output_path = abspath(output)
     parent_dir = dirname(output_path)
     if parent_dir != "."
+        # Create the target directory when rendering into a nested path.
         mkpath(parent_dir)
     end
 
     preserved_dir = Ref{Union{Nothing,String}}(nothing)
     mktempdir() do output_dir
+        # Populate the temporary folder with shared POV-Ray macros.
         copy_macros(output_dir)
         ini_file, povscene = generate_pov(
             v, theta, t,
@@ -66,8 +71,10 @@ function render_mobius_animation(
             sampling = sampling,
         )
 
+        # Render frames with POV-Ray before combining them into a video.
         povraycall(output_dir, ini_file)
 
+        # Assemble the video or GIF with ffmpeg using the rendered frames.
         ffmpegcall(output_dir, output_path, fps, resolution, quality)
 
         if keep_temp

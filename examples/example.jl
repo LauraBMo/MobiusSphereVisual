@@ -1,7 +1,7 @@
-# File: examples/example.jl
+# Example usage for MobiusSphereVisual.
 using MobiusSphereVisual
 
-# Example 1: Simple rotation
+# Example 1: Simple rotation.
 println("Creating rotation animation...")
 rotation_axis = [0.0, 0.0, 1.0]
 rotation_angle = π / 2
@@ -17,7 +17,7 @@ MobiusSphereVisual.render_mobius_animation(
     quality=:high,
 )
 
-# Example 2: Loxodromic transformation
+# Example 2: Loxodromic transformation.
 println("Creating loxodromic animation...")
 loxodromic_axis = [0.0, 0.0, 1.0]
 loxodromic_angle = π / 3
@@ -33,12 +33,14 @@ MobiusSphereVisual.render_mobius_animation(
     quality=:high,
 )
 
-# Example 3: Custom transformation
+# Example 3: Custom transformation.
 println("Creating custom transformation...")
-v = normalize([1.0, 1.0, 0.0])  # diagonal axis
+# Diagonal axis for the custom transformation.
+v = normalize([1.0, 1.0, 0.0])
 theta = π/3
 # Angles are still provided in radians; the library converts them to degrees for POV-Ray.
-t = [0.5, 0.0, 0.5]  # diagonal translation
+# Diagonal translation to complement the chosen axis.
+t = [0.5, 0.0, 0.5]
 
 MobiusSphereVisual.render_mobius_animation(
     v, theta, t;
