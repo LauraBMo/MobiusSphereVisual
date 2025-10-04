@@ -2,6 +2,19 @@
 # not using FFMPEG
 # using local ffmpeg
 
+## POV-Ray not allow predefine output string, which is needed by ffmepg, funny enough.
+function detect_frame_pattern(output_dir::String, rx = r"frame_(\d+)\.png")
+    for file in readdir(output_dir)
+        m = match(rx, file)
+        if !isnothing(m)
+            num_str = m.captures[1]
+            ndigits = length(num_str)
+            return "frame_%0$(ndigits)d.png"
+        end
+    end
+    error("No frame_*.png files found in $output_dir")
+end
+
 """
     ffmpegcall(output_dir::String, output_path::String="mobius.mp4", fps::Int=30, resolution::Tuple{Int,Int}=(1280, 720), quality::Symbol=:high)
 
