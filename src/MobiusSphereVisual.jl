@@ -26,7 +26,10 @@ remaining the default. Set `keep_temp=true` to retain the rendered frame
 directory alongside the exported video for debugging or post-processing. When
 you need to fine-tune ray-tracing parameters beyond a preset, provide
 `sampling=(antialias="On", antialias_depth=4, sampling_method=2,
-antialias_threshold=0.05, flags="+A0.05\n+AM2 +R3")` or similar overrides.
+antialias_threshold=0.05, radiosity=true, photons=true,
+flags="+A0.05\n+AM2 +R3")` or similar overrides. Setting `radiosity=true`
+or `photons=true` injects tuned global illumination blocks into the POV-Ray
+scene without touching the template on disk.
 """
 function render_mobius_animation(
     v::Vector{Float64},
@@ -44,6 +47,8 @@ function render_mobius_animation(
 
     resolution = _validate_resolution(resolution)
     sampling_overrides = _normalize_sampling_overrides(sampling)
+    pov_settings = pov_settings_with_overrides(quality, sampling_overrides)
+    global_settings = global_settings_extra(pov_settings)
 
     output_path = abspath(output)
     parent_dir = dirname(output_path)
@@ -58,10 +63,16 @@ function render_mobius_animation(
             output_dir,
             nframes,
             resolution;
-            quality=quality,
-            sampling_overrides=sampling_overrides,
+            pov_settings=pov_settings,
         )
-        povraycall(output_dir, v, theta, t, ini_file)
+        povraycall(
+            output_dir,
+            v,
+            theta,
+            t,
+            ini_file;
+            global_settings_extra=global_settings,
+        )
 
         ffmpegcall(output_dir, output_path, fps, resolution, quality)
 
@@ -132,12 +143,21 @@ end
 
 function povraycall(
     output_dir,
-    v, theta, t,
-    ini_file
-    )
+    v,
+    theta,
+    t,
+    ini_file;
+    global_settings_extra::AbstractString="",
+)
     @info "Working in temporary directory: $output_dir"
     # Generate files
-    generate_pov_scene(v, theta, t, output_dir)
+    generate_pov_scene(
+        v,
+        theta,
+        t,
+        output_dir;
+        global_settings_extra=global_settings_extra,
+    )
 
     # Run POV-Ray
     @info "Rendering frames with POV-Ray..."

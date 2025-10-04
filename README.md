@@ -92,7 +92,9 @@ render_mobius_animation(v, theta, t; quality=:ultra,
         antialias_depth = 7,
         sampling_method = 2,
         antialias_threshold = 0.015,
-        flags = "+A0.015\n+AM2 +R9\n+Q13\n+UA\nRadiosity=On\nPhotons=On",
+        radiosity = true,
+        photons = true,
+        flags = "+A0.015\n+AM2 +R9\n+Q13\n+UA",
     ))
 ```
 
@@ -102,9 +104,14 @@ The renderer understands the following fields:
 - `antialias_depth` — integer depth for adaptive supersampling.
 - `sampling_method` — sampling algorithm (`1` for non-recursive, `2` for recursive sampling).
 - `antialias_threshold` — floating point threshold that controls pixel refinement.
-- `flags` — free-form string appended to the `.ini` file for extra POV-Ray options (e.g. `+Q11`, `Radiosity=On`).
+- `radiosity` — boolean toggle that injects a high-quality radiosity block into the scene’s `global_settings`.
+- `photons` — boolean toggle that adds a photon-mapping block with dense gathers for caustics and secondary illumination.
+- `flags` — free-form string appended to the `.ini` file for extra POV-Ray options (e.g. `+Q11`, `+UA`).
 
 Any field you omit inherits its value from the chosen quality preset, so you can override just the settings you need.
+
+The `:ultra` and `:film` presets set both `radiosity` and `photons` to `true`, enabling soft indirect light and photon caustics without
+requiring a user configuration file.
 
 See the [documentation](https://LauraBMo.github.io/MobiusSphereVisual.jl/dev/)
 for API details and extended examples.

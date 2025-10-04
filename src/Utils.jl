@@ -17,6 +17,8 @@ function quality_settings(quality::Symbol)
                 sampling_method = 1,
                 antialias_threshold = 0.3,
                 flags = "+A0.5\n+AM1 +R1\n+Q08\n+UA",
+                radiosity = false,
+                photons = false,
             ),
             ffmpeg = (
                 crf = 30,
@@ -31,6 +33,8 @@ function quality_settings(quality::Symbol)
                 sampling_method = 2,
                 antialias_threshold = 0.1,
                 flags = "+A0.2\n+AM2 +R3\n+Q09\n+UA",
+                radiosity = false,
+                photons = false,
             ),
             ffmpeg = (
                 crf = 23,
@@ -45,6 +49,8 @@ function quality_settings(quality::Symbol)
                 sampling_method = 2,
                 antialias_threshold = 0.05,
                 flags = "+A0.1\n+AM2 +R3\n+Q09\n+UA",
+                radiosity = false,
+                photons = false,
             ),
             ffmpeg = (
                 crf = 20,
@@ -58,7 +64,9 @@ function quality_settings(quality::Symbol)
                 antialias_depth = 5,
                 sampling_method = 2,
                 antialias_threshold = 0.03,
-                flags = "+A0.03\n+AM2 +R5\n+Q11\n+UA\nRadiosity=On\nPhotons=On",
+                flags = "+A0.03\n+AM2 +R5\n+Q11\n+UA",
+                radiosity = true,
+                photons = true,
             ),
             ffmpeg = (
                 crf = 18,
@@ -72,7 +80,9 @@ function quality_settings(quality::Symbol)
                 antialias_depth = 6,
                 sampling_method = 2,
                 antialias_threshold = 0.02,
-                flags = "+A0.02\n+AM2 +R7\n+Q13\n+UA\nRadiosity=On\nPhotons=On",
+                flags = "+A0.02\n+AM2 +R7\n+Q13\n+UA",
+                radiosity = true,
+                photons = true,
             ),
             ffmpeg = (
                 crf = 16,
@@ -83,6 +93,41 @@ function quality_settings(quality::Symbol)
         valid = join(string.((:draft, :medium, :high, :ultra, :film)), ", ")
         throw(ArgumentError("Unknown quality preset: $quality. Supported presets: $valid"))
     end
+end
+
+function pov_settings_with_overrides(quality::Symbol, overrides::NamedTuple)
+    return merge(quality_settings(quality).pov, overrides)
+end
+
+function global_settings_extra(pov_settings::NamedTuple)
+    buffer = IOBuffer()
+    if get(pov_settings, :radiosity, false)
+        print(
+            buffer,
+            "\n  radiosity {\n",
+            "    pretrace_start 0.08\n",
+            "    pretrace_end 0.005\n",
+            "    count 200\n",
+            "    recursion_limit 2\n",
+            "    nearest_count 10\n",
+            "    low_error_factor 0.5\n",
+            "    minimum_reuse 0.015\n",
+            "    maximum_reuse 0.1\n",
+            "    brightness 1.0\n",
+            "  }",
+        )
+    end
+    if get(pov_settings, :photons, false)
+        print(
+            buffer,
+            "\n  photons {\n",
+            "    spacing 0.025\n",
+            "    gather 40, 80\n",
+            "    max_trace_level 12\n",
+            "  }",
+        )
+    end
+    return String(take!(buffer))
 end
 
 """
