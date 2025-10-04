@@ -1,4 +1,4 @@
-# MobiusSphereVisual [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://LauraBMo.github.io/MobiusSphereVisual.jl/stable/) [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://LauraBMo.github.io/MobiusSphereVisual.jl/dev/) [![Build Status](https://github.com/LauraBMo/MobiusSphereVisual.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/LauraBMo/MobiusSphereVisual.jl/actions/workflows/CI.yml?query=branch%3Amain) [![Coverage](https://codecov.io/gh/LauraBMo/MobiusSphereVisual.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/LauraBMo/MobiusSphereVisual.jl)
+# MobiusSphereVisual [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://LauraBMo.github.io/MobiusSphereVisual/stable/) [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://LauraBMo.github.io/MobiusSphereVisual/dev/) [![Build Status](https://github.com/LauraBMo/MobiusSphereVisual.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/LauraBMo/MobiusSphereVisual.jl/actions/workflows/CI.yml?query=branch%3Amain) [![Coverage](https://codecov.io/gh/LauraBMo/MobiusSphereVisual.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/LauraBMo/MobiusSphereVisual.jl)
 
 Render Möbius transformations in the style of *Möbius Transformations Revealed* directly from Julia.
 
@@ -113,5 +113,5 @@ Any field you omit inherits its value from the chosen quality preset, so you can
 The `:ultra` and `:film` presets set both `radiosity` and `photons` to `true`, enabling soft indirect light and photon caustics without
 requiring a user configuration file.
 
-See the [documentation](https://LauraBMo.github.io/MobiusSphereVisual.jl/dev/)
+See the [documentation](https://LauraBMo.github.io/MobiusSphereVisual/dev/)
 for API details and extended examples.

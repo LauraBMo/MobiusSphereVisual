@@ -6,9 +6,9 @@ DocMeta.setdocmeta!(MobiusSphereVisual, :DocTestSetup, :(using MobiusSphereVisua
 makedocs(
     modules = [MobiusSphereVisual],
     authors = "LauBMo <laurea987@gmail.com> and contributors",
-    sitename = "MobiusSphereVisual.jl",
+    sitename = "MobiusSphereVisual",
     format = Documenter.HTML(
-        canonical = "https://LauraBMo.github.io/MobiusSphereVisual.jl",
+        canonical = "https://LauraBMo.github.io/MobiusSphereVisual",
         edit_link = "main",
         assets = String[],
     ),
