@@ -13,8 +13,9 @@ include("SetQuality.jl")
 include("FFmpegCall.jl")
 include("Files.jl")
 
-## v, theta, t coming from `MobiusSphere` package in form of v::Vector{T}, x::T, t::Vector{T}
-## where T may be CalciumFieldElem, T <: Real,...
+# The vectors `v` and `t` originate from the MobiusSphere package as
+# `Vector{T}` values alongside a scalar rotation `theta::T`, where `T`
+# represents a real-like numeric type (for example `CalciumFieldElem`).
 """
     render_mobius_animation(v, theta, t; output="mobius.mp4", fps=30,
                             resolution=(1280,720), nframes=150, quality=:high)

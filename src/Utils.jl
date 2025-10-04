@@ -1,4 +1,4 @@
-# -- Miscellaneous helpers ----------------------------------------------------
+# -- Miscellaneous Helpers --------------------------------------------------
 """
     derived_temp_destination(output_path)
 
@@ -24,7 +24,7 @@ function povraycall(output_dir, ini_file)
     run(Cmd(`povray $ini_file`, dir=output_dir))
 end
 
-# -- Validation helpers -----------------------------------------------------
+# -- Validation Helpers ----------------------------------------------------
 """
     _validate_resolution(resolution)
 
