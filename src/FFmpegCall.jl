@@ -1,8 +1,12 @@
-# ffmpegcall.jl
-# not using FFMPEG
-# using local ffmpeg
+raw"""
+    detect_frame_pattern(output_dir; rx=r"frame_(\d+)\.png")
 
-## POV-Ray not allow predefine output string, which is needed by ffmepg, funny enough.
+Scan `output_dir` for image frames and derive the printf-style pattern used by
+FFmpeg. The default regular expression matches files named like
+`frame_0001.png` and extracts the zero-padded index to determine the required
+padding width. Returns a string such as `"frame_%04d.png"`. Throws an
+`ArgumentError` if no matching files are found.
+"""
 function detect_frame_pattern(output_dir::String, rx = r"frame_(\d+)\.png")
     for file in readdir(output_dir)
         m = match(rx, file)
@@ -12,7 +16,7 @@ function detect_frame_pattern(output_dir::String, rx = r"frame_(\d+)\.png")
             return "frame_%0$(ndigits)d.png"
         end
     end
-    error("No frame_*.png files found in $output_dir")
+    throw(ArgumentError("No frame_*.png files found in $output_dir"))
 end
 
 """

@@ -1,9 +1,23 @@
-# -- Miscelaneos helpers -----------------------------------------------------
+# -- Miscellaneous helpers ----------------------------------------------------
+"""
+    derived_temp_destination(output_path)
+
+Return the directory path used to store intermediate frames for a render.
+The directory is derived from `output_path` by appending a `_frames` suffix to
+the output file name and reusing the same parent directory.
+"""
 function derived_temp_destination(output_path::AbstractString)
     stem, _ = splitext(basename(output_path))
     return joinpath(dirname(output_path), "$(stem)_frames")
 end
 
+"""
+    povraycall(output_dir, ini_file)
+
+Invoke POV-Ray to render frames described by `ini_file` inside `output_dir`.
+The function logs the working directory for transparency and forwards the
+`.ini` file to the `povray` executable using Julia's `run`.
+"""
 function povraycall(output_dir, ini_file)
     @info "Working in temporary directory: $output_dir"
     @info "Rendering frames with POV-Ray..."
@@ -11,6 +25,13 @@ function povraycall(output_dir, ini_file)
 end
 
 # -- Validation helpers -----------------------------------------------------
+"""
+    _validate_resolution(resolution)
+
+Ensure that the `(width, height)` tuple contains positive integers, returning
+the tuple unchanged. Throws an `ArgumentError` when either dimension is zero
+or negative.
+"""
 function _validate_resolution(resolution::Tuple{Int,Int})
     width, height = resolution
     if width <= 0 || height <= 0
