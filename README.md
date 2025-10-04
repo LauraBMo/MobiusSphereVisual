@@ -25,9 +25,9 @@ using MobiusSphere
 using MobiusSphereVisual
 
 mobius = MobiusSphere.example_loxodromic()  # replace with your own construction
-coeffs = MobiusSphere.motion_parameters(mobius)  # returns axis/angle/translation data
+coeffs = MobiusSphere.motion_parameters(mobius)  # returns (v, theta, t)
 
-render_mobius_animation(coeffs; output="examples/loxodromic.mp4", nframes=120)
+render_mobius_animation(coeffs...; output="examples/loxodromic.mp4", nframes=120)
 ```
 
 ## Quality presets
@@ -62,14 +62,14 @@ Similarly, the ffmpeg presets balance compression quality and encoding speed—t
 faster settings write files quickly at the cost of larger sizes and slightly
 lower detail.
 
-When you need the raw pieces, the new [`coerce_motion_parameters`](https://LauraBMo.github.io/MobiusSphereVisual.jl/dev/reference/#MobiusSphereVisual.coerce_motion_parameters) utility converts any compatible coefficient object into `(v, theta, t)` tuples:
+When you need the raw pieces, unpack the tuple manually and pass the components to `render_mobius_animation`:
 
 ```julia
 using MobiusSphereVisual
 
-coeffs = (axis = [0.0, 0.0, 1.0], angle = pi / 2, translation = [0.2, 0.0, 0.0])
+params = ([0.0, 0.0, 1.0], pi / 2, [0.2, 0.0, 0.0])
 
-v, theta, t = coerce_motion_parameters(coeffs)
+v, theta, t = params
 render_mobius_animation(v, theta, t; output="examples/from_tuple.mp4", nframes=120)
 ```
 
