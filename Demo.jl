@@ -20,14 +20,14 @@ render_mobius_animation(axis, angle, trans;
     fps=3,
     resolution=(840, 420),
     nframes=21,
-    quality=:ultra,
-    # quality=:draft,
+    # quality=:ultra,
+    quality=:draft,
     keep_temp=false,
-    # sampling=(
-    #     antialias="On",
-    #     antialias_depth=7,
-    #     sampling_method=2,
-    #     antialias_threshold=0.015,
-    #     flags="+A0.015\n+AM2 +R9\n+Q13\n+UA\nRadiosity=On\nPhotons=On",
-    # )
+    sampling=(
+        antialias="On",
+        # antialias_depth=7,
+        # sampling_method=2,
+        antialias_threshold=0.015,
+        # flags="+A0.015\n+AM2 +R9\n+Q13\n+UA\nRadiosity=On\nPhotons=On",
+    )
                         )

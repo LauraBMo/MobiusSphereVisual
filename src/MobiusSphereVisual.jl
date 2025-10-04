@@ -9,6 +9,7 @@ export render_mobius_animation
 const ASSETS_DIR = joinpath(@__DIR__, "..", "assets")
 
 include("Utils.jl")
+include("SetQuality.jl")
 include("FFmpegCall.jl")
 include("Files.jl")
 
@@ -84,12 +85,6 @@ function render_mobius_animation(
     end
 
     @info "Animation saved to: $output_path"
-end
-
-function povraycall(output_dir, ini_file)
-    @info "Working in temporary directory: $output_dir"
-    @info "Rendering frames with POV-Ray..."
-    run(Cmd(`povray $ini_file`, dir=output_dir))
 end
 
 end # module
