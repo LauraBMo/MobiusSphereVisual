@@ -21,9 +21,15 @@ include("Files.jl")
 Render a Möbius sphere animation in the style of "Möbius Transformations Revealed".
 `theta` is specified in radians and converted to degrees for the POV-Ray scene.
 The `quality` keyword toggles coordinated POV-Ray and ffmpeg presets ranging
-from `:draft` (fastest) to `:high` (default, best fidelity). Set `keep_temp=true`
-to retain the rendered frame directory alongside the exported video for
-debugging or post-processing.
+from `:draft` (fastest) through `:film` (highest fidelity), with `:high`
+remaining the default. Set `keep_temp=true` to retain the rendered frame
+directory alongside the exported video for debugging or post-processing. When
+you need to fine-tune ray-tracing parameters beyond a preset, provide
+`sampling=(antialias="On", antialias_depth=4, sampling_method=2,
+antialias_threshold=0.05, radiosity=true, photons=true,
+flags="+A0.05\n+AM2 +R3")` or similar overrides. Setting `radiosity=true`
+or `photons=true` injects tuned global illumination blocks into the POV-Ray
+scene without touching the template on disk.
 """
 function render_mobius_animation(
     v::Vector{Float64},
@@ -34,9 +40,11 @@ function render_mobius_animation(
     resolution::Tuple{Int,Int}=(1280, 720),
     nframes::Int=150,
     quality::Symbol=:high,
+    sampling::Union{Nothing,NamedTuple,Dict}=nothing,
     keep_temp::Bool=false,
 )
     v = validate_inputs(v, theta, t)
+    resolution = _validate_resolution(resolution)
 
     output_path = abspath(output)
     parent_dir = dirname(output_path)
@@ -47,8 +55,16 @@ function render_mobius_animation(
     preserved_dir = Ref{Union{Nothing,String}}(nothing)
     mktempdir() do output_dir
         copy_macros(output_dir)
-        ini_file = generate_pov_ini(output_dir, nframes, resolution; quality=quality)
-        povraycall(output_dir, v, theta, t, ini_file)
+        ini_file, povscene = generate_pov(
+            v, theta, t,
+            output_dir,
+            nframes,
+            resolution;
+            quality = quality,
+            sampling = sampling,
+        )
+
+        povraycall(output_dir, ini_file)
 
         ffmpegcall(output_dir, output_path, fps, resolution, quality)
 
@@ -70,39 +86,8 @@ function render_mobius_animation(
     @info "Animation saved to: $output_path"
 end
 
-# function ffmpegcall(
-#     output_dir,
-#     output_path::String="mobius.mp4",
-#     fps::Int=30,
-#     resolution::Tuple{Int,Int}=(1280, 720),
-#     quality::Symbol=:high,
-# )
-#     # 🔍 Auto-detect frame numbering format
-#     frame_pattern = detect_frame_pattern(output_dir)
-
-#     # Convert to video
-#     @info "Creating video with ffmpeg..."
-#     if endswith(output_path, ".mp4")
-#         settings = quality_settings(quality).ffmpeg
-#         cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -c:v libx264 -preset $(settings.preset) -crf $(settings.crf) -pix_fmt yuv420p $output_path`
-#     elseif endswith(output_path, ".gif")
-#         cmd = `ffmpeg -y -framerate $fps -i $frame_pattern -vf "fps=$fps,scale=$(resolution[1]):$(resolution[2]):flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" $output_path`
-#     else
-#         error("Unsupported output format. Use .mp4 or .gif")
-#     end
-#     run(Cmd(cmd, dir=output_dir))
-# end
-
-function povraycall(
-    output_dir,
-    v, theta, t,
-    ini_file
-    )
+function povraycall(output_dir, ini_file)
     @info "Working in temporary directory: $output_dir"
-    # Generate files
-    generate_pov_scene(v, theta, t, output_dir)
-
-    # Run POV-Ray
     @info "Rendering frames with POV-Ray..."
     run(Cmd(`povray $ini_file`, dir=output_dir))
 end

@@ -7,7 +7,9 @@
 // Local files
 #include "macros.inc"
 
-global_settings { assumed_gamma 1.0 }
+global_settings {
+  assumed_gamma 1.0@GLOBAL_SETTINGS_EXTRA@
+}
 
 camera {
   location <0, 3, -8>

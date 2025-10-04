@@ -1,11 +1,19 @@
 """
-    generate_pov_scene(v, theta, t, output_dir)
+    generate_pov_scene(v, theta, t, output_dir; global_settings_extra="")
 
 Generate a single POV-Ray file using a template with placeholders.
 Relies on POV-Ray's Axis_Rotate_Trans and built-in textures.
 `theta` should be provided in radians; it is converted to degrees for POV-Ray.
+`global_settings_extra` injects additional lines inside the template's
+`global_settings` block, enabling radiosity or photon settings when requested.
 """
-function generate_pov_scene(v::Vector{Float64}, theta::Float64, t::Vector{Float64}, output_dir::String)
+function generate_pov_scene(
+    v::Vector{Float64},
+    theta::Float64,
+    t::Vector{Float64},
+    output_dir::String;
+    global_settings_extra::AbstractString="",
+)
     template_path = joinpath(ASSETS_DIR, "mobius_template.pov")
     if !isfile(template_path)
         error("Missing template: $template_path")
@@ -16,10 +24,12 @@ function generate_pov_scene(v::Vector{Float64}, theta::Float64, t::Vector{Float6
 
     # Replace placeholders
     vars = ["X@", "Y@", "Z@"]
-    pov_code = replace(template,
-                       (("@V_" .* vars) .=> string.(v))...,
-                           "@THETA@" => string(theta_deg),
-                       (("@T_" .* vars) .=> string.(t))...
+    pov_code = replace(
+        template,
+        "@GLOBAL_SETTINGS_EXTRA@" => global_settings_extra,
+        (("@V_" .* vars) .=> string.(v))...,
+        "@THETA@" => string(theta_deg),
+        (("@T_" .* vars) .=> string.(t))...,
     )
 
     scene_path = joinpath(output_dir, "mobius.pov")
@@ -28,16 +38,19 @@ function generate_pov_scene(v::Vector{Float64}, theta::Float64, t::Vector{Float6
 end
 
 """
-    generate_pov_ini(output_dir, nframes, resolution; quality=:high)
+    generate_pov_ini(output_dir, nframes, resolution; pov_settings)
 
-Generate a minimal, robust .ini file tailored to the requested quality
-preset.
+Generate a minimal, robust .ini file tailored to the requested sampling
+parameters. Pass a NamedTuple containing the POV-Ray fields (antialias,
+depth, sampling method, threshold, flags, radiosity, photons). A convenience
+method remains available that accepts `quality` and `sampling_overrides` for
+backwards compatibility.
 """
 function generate_pov_ini(
     output_dir::String,
     nframes::Int,
     resolution::Tuple{Int,Int};
-    quality::Symbol=:high,
+    settings::NamedTuple,
 )
     template_path = joinpath(ASSETS_DIR, "render.ini")
     if !isfile(template_path)
@@ -45,7 +58,6 @@ function generate_pov_ini(
     end
 
     template = read(template_path, String)
-    settings = quality_settings(quality).pov
     ini_content = replace(
         template,
         "@INPUT_FILE@" => "mobius.pov",
@@ -64,20 +76,54 @@ function generate_pov_ini(
     return "render.ini"
 end
 
+function generate_pov(
+    v::Vector{Float64},
+    theta::Float64,
+    t::Vector{Float64},
+    output_dir::String,
+    nframes::Int,
+    resolution::Tuple{Int,Int};
+    quality::Symbol=:high,
+    sampling::Union{Nothing,NamedTuple,Dict}=nothing,
+    )
+    ## Processing kwargs
+    sampling = _normalize_sampling_overrides(sampling)
+    settings = merge(quality_settings(quality).pov, sampling)
+    global_settings = global_settings_extra(settings)
+
+    ## Create the actual files
+    ini_file = generate_pov_ini(output_dir, nframes, resolution; settings=settings)
+    scene = generate_pov_scene(v, theta, t, output_dir;
+                               global_settings_extra = global_settings)
+    ## Return name, path
+    return ini_file, scene
+end
+
+function _normalize_sampling_overrides(sampling)
+    if sampling === nothing
+        return NamedTuple()
+    elseif sampling isa NamedTuple
+        return sampling
+    elseif sampling isa Dict
+        return (; (Symbol(key) => value for (key, value) in sampling)...)
+    else
+        throw(ArgumentError(
+            "sampling overrides must be provided as a NamedTuple or Dict, got $(typeof(sampling))",
+        ))
+    end
+end
+
 """
-    copy_macros(output_dir, nframes, resolution; quality=:high)
+    copy_macros(output_dir)
 """
 function copy_macros(output_dir::String)
     _file = "macros.inc"
     _path = joinpath(ASSETS_DIR, _file)
     if !isfile(_path)
-        error("Missing template: $_path")
+        error("Missing file: $_path")
     end
 
-    # contents = read(_path, String)
     ini_path = joinpath(output_dir, _file)
-    # write(ini_path, contents)
-    # return ini_path
     cp(_path, ini_path)
     return _file
 end
