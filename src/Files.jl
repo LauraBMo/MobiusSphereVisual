@@ -22,7 +22,7 @@ function generate_pov_scene(
     template = read(template_path, String)
     theta_deg = Base.rad2deg(theta)
 
-    # Replace placeholder tokens.
+    # Replace placeholder tokens in the POV template.
     vars = ["X@", "Y@", "Z@"]
     pov_code = replace(
         template,
@@ -33,6 +33,7 @@ function generate_pov_scene(
     )
 
     scene_path = joinpath(output_dir, "mobius.pov")
+    # Persist the filled template alongside the render configuration.
     write(scene_path, pov_code)
     return scene_path
 end
@@ -136,6 +137,7 @@ function copy_macros(output_dir::String)
     end
 
     ini_path = joinpath(output_dir, _file)
+    # Copy the shared macros file into the temporary render directory.
     cp(_path, ini_path)
     return _file
 end

@@ -1,4 +1,4 @@
-# -- Miscellaneous Helpers --------------------------------------------------
+# Miscellaneous helper functions.
 """
     derived_temp_destination(output_path)
 
@@ -7,6 +7,7 @@ The directory is derived from `output_path` by appending a `_frames` suffix to
 the output file name and reusing the same parent directory.
 """
 function derived_temp_destination(output_path::AbstractString)
+    # Reuse the output directory and append a `_frames` suffix to the stem.
     stem, _ = splitext(basename(output_path))
     return joinpath(dirname(output_path), "$(stem)_frames")
 end
@@ -21,10 +22,11 @@ The function logs the working directory for transparency and forwards the
 function povraycall(output_dir, ini_file)
     @info "Working in temporary directory: $output_dir"
     @info "Rendering frames with POV-Ray..."
+    # Run POV-Ray with the generated configuration file inside the temp folder.
     run(Cmd(`povray $ini_file`, dir=output_dir))
 end
 
-# -- Validation Helpers ----------------------------------------------------
+# Validation helper functions.
 """
     _validate_resolution(resolution)
 
@@ -55,6 +57,7 @@ function validate_inputs(v::Vector{Float64}, theta::Float64, t::Vector{Float64})
     end
     if !isapprox(v_norm, 1.0; atol=1e-10)
         @warn "Normalizing non-unit rotation axis"
+        # Preserve the rotation axis direction while enforcing unit length.
         v ./= v_norm
     end
     return v
