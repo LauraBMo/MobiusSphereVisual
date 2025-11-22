@@ -35,6 +35,7 @@ function generate_pov_scene(
     scene_path = joinpath(output_dir, "mobius.pov")
     # Persist the filled template alongside the render configuration.
     write(scene_path, pov_code)
+    @debug "POV-Ray scene written to: $scene_path"
     return scene_path
 end
 
@@ -73,6 +74,7 @@ function generate_pov_ini(
     )
     ini_path = joinpath(output_dir, "render.ini")
     write(ini_path, ini_content)
+    @debug "POV-Ray configuration written to: $ini_path"
     # Return the relative path for compatibility with existing callers.
     return "render.ini"
 end
@@ -136,8 +138,9 @@ function copy_macros(output_dir::String)
         error("Missing file: $_path")
     end
 
-    ini_path = joinpath(output_dir, _file)
+    dest_path = joinpath(output_dir, _file)
     # Copy the shared macros file into the temporary render directory.
-    cp(_path, ini_path)
+    cp(_path, dest_path)
+    @debug "Copied macros file to: $dest_path"
     return _file
 end
