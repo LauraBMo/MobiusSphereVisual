@@ -5,39 +5,22 @@
 #include "transforms.inc"
 
 // Local files
-#include "macros.inc"
+#include "mobius_macros.inc"
+#include "mobius_textures.inc"
+#include "mobius_scene.inc"
 
 global_settings {
   assumed_gamma 1.0@GLOBAL_SETTINGS_EXTRA@
 }
 
-camera {
-  location <0, 3, -8>
-  look_at <0, 1, 0>
-  angle 35
-}
+// Use the configured camera
+camera { MobiusCamera }
 
-background { color rgb <0.02, 0.02, 0.08> }
+// Use the configured background
+background { BackgroundColor }
 
-light_source { <10, 20, -5>, rgb 1 }
-
-// Complex plane with grid pattern
-plane {
-  y, -1
-  texture {
-    pigment {
-      checker
-      color rgbf <0.8, 0.8, 0.8, 0.5>
-      color rgbf <0.6, 0.6, 0.6, 0.5>
-      scale 0.4
-    }
-    finish {
-      ambient 0.3
-      diffuse 0.7
-      reflection 0.1
-    }
-  }
-}
+// Use the configured floor
+object { FloorPlane }
 
 // plane { y, 0
   //   pigment{
@@ -61,21 +44,7 @@ plane {
   //   quick_color rgb <1,0.5,0>
   // }
 
-#declare RainbowPolar = pigment {
-  onion
-  warp { spherical }
-  color_map {
-    [0.00 color rgbf <0.3,0.3,1,0.5>]   // indigo
-    // [0.15 color rgbf <0.0,0.7,1,0.5>]   // cyan
-    [0.30 color rgbf <0.0,1,0.5,0.5>]   // green
-    // [0.45 color rgbf <0.7,1,0.0,0.5>]   // yellow-green
-    [0.60 color rgbf <1,0.7,0.0,0.5>]   // orange
-    // [0.75 color rgbf <1,0.0,0.3,0.5>]   // magenta-red
-    [0.90 color rgbf <0.6,0.0,1,0.5>]   // violet
-    [1.00 color rgbf <0.3,0.3,1,0.5>]   // wrap back to indigo
-  }
-  scale 0.25
-}
+
 
 // Compute current transform based on clock
 #if (clock <= 0.5)
@@ -94,7 +63,7 @@ plane {
 #declare BaseNorthPole = <0, 1.001, 0>;
 #declare CurrentNorthPole = vtransform(BaseNorthPole, CurrentTransform);
 
-// Emissive light at current north pole
+// Emissive light at current north pole (using updated position)
 light_source { CurrentNorthPole, rgb <2.1, 2.1, 1.4> * 0.55 }
 
 // small visible marker for the light source
@@ -104,33 +73,21 @@ sphere {
   no_shadow
 }
 
-// Union of glass sphere and clipped textured overlay
-// #declare SphereGrid =
-//   union {
-//     // 1. Full transparent glass sphere
-//     sphere { 0, 1
-//       texture { Glass }
-//     }
-
-//     // 2. Textured cap (corresponds to unit disk)
-//     sphere { 0, 1
-//       texture {
-//         pigment { RainbowPolar }
-//         finish { ambient 0 diffuse 0.7 specular 0.2 }
-//       }
-//       clipped_by { plane { y,  1} }  // keeps y <= 0.4
-//     }
-//   };
-
-#declare MySphereGrid =
+// The Möbius ball - a blurry unit ball with rainbow-colored gird covering the bottom half up to 0.8 in height
+#declare MoebiusBall =
   union {
-    // Focus on the translucent argument cap so its prismatic shadow can be
-    // evaluated without the outer shell masking the effect.
+    // Glass shell for the blurry effect
+    SphereGlassShell()
+    
+    // Rainbow-colored gird covering the bottom half up to 0.8 in height
     SphereArgumentCap(pi/8, pi/8, 0.02)
+    
+    // Highlight sheen
+    SphereHighlightSheen()
   };
 
 object {
-  MySphereGrid
+  MoebiusBall
   // Apply common transform: first move to admissible position, then animate
   transform { CurrentTransform }
 }

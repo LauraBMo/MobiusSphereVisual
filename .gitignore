@@ -1,22 +1,54 @@
 ```
 # Compiled and build artifacts
-*.so
-*.dylib
-*.dll
-*.exe
-*.out
-*.o
-*.obj
-*.a
-*.lib
 *.pyc
 __pycache__/
+*.o
+*.obj
+*.out
+*.exe
+*.dll
+*.so
+*.a
+
+# Dependencies
+node_modules/
+venv/
+.venv/
+.env
+.env.local
+*.env.*
+
+# Build directories
+dist/
+build/
+target/
 *.class
-*.jar
-*.war
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Compressed files
 *.zip
-*.tar
 *.gz
+*.tar
 *.tgz
 *.bz2
 *.xz
@@ -37,51 +69,26 @@ __pycache__/
 *.tar.xz
 *.tar.zst
 
-# Dependencies
-node_modules/
-venv/
-.venv/
-.env
-.env.local
-.env.*
-.julia/
-.julia-*/
-.zig/
-target/
+# Python specific
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Gradle
 .gradle/
+
+# MyPy
 .mypy_cache/
+
+# PyTest
 .pytest_cache/
-coverage/
-htmlcov/
-.coverage
 
-# Build directories
-build/
-dist/
-out/
-bin/
-obj/
+# Julia
+julia-*/
 
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-*.tmp
-
-# System files
-.DS_Store
-Thumbs.db
-*.log
-
-# Julia specific
-*.ji
-*.jl.cov
-*.jl.info
-.julia/
-```
-
-Wait, let me reconsider this. The changes are only Julia source files (.jl), so according to rule #6, if there are no build artifacts, dependencies, or temp files, I should output nothing.
-
-```
+# Zig
+zig*/
 ```
