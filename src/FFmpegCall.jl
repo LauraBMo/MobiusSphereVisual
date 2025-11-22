@@ -11,15 +11,25 @@ padding width. Returns a string such as `"frame_%04d.png"`. Throws an
 `ArgumentError` if no matching files are found.
 """
 function detect_frame_pattern(output_dir::String, rx = r"frame_(\d+)\.png")
+    frame_files = String[]
+    
     for file in readdir(output_dir)
         m = match(rx, file)
         if !isnothing(m)
-            num_str = m.captures[1]
-            ndigits = length(num_str)
-            return "frame_%0$(ndigits)d.png"
+            push!(frame_files, file)
         end
     end
-    throw(ArgumentError("No frame_*.png files found in $output_dir"))
+    
+    if isempty(frame_files)
+        throw(ArgumentError("No frame_*.png files found in $output_dir"))
+    end
+    
+    # Find the file with the longest number sequence to determine padding
+    file = frame_files[1]
+    m = match(rx, file)
+    num_str = m.captures[1]
+    ndigits = length(num_str)
+    return "frame_%0$(ndigits)d.png"
 end
 
 """
@@ -49,16 +59,27 @@ function ffmpegcall(
     # Default to the system ffmpeg binary to avoid depending on the package runtime.
     ffmpeg_path = "ffmpeg"
 
-    if endswith(output_path, ".mp4")
-        cmd = _build_mp4_command(ffmpeg_path, frame_pattern, fps, output_path, quality)
+    # Check if ffmpeg executable exists
+    if !success(`which $ffmpeg_path`)
+        throw(ErrorException("FFmpeg executable not found. Please ensure FFmpeg is installed and in your PATH."))
+    end
+
+    cmd = if endswith(output_path, ".mp4")
+        _build_mp4_command(ffmpeg_path, frame_pattern, fps, output_path, quality)
     elseif endswith(output_path, ".gif")
-        cmd = _build_gif_command(ffmpeg_path, frame_pattern, fps, resolution, output_path)
+        _build_gif_command(ffmpeg_path, frame_pattern, fps, resolution, output_path)
     else
         error("Unsupported output format '$(output_path)'. Use .mp4 or .gif")
     end
 
     # Execute the command in the specified directory.
-    run(Cmd(cmd, dir=output_dir))
+    try
+        run(Cmd(cmd, dir=output_dir))
+        @info "FFmpeg processing completed successfully"
+    catch e
+        @error "FFmpeg processing failed" exception=(e, catch_backtrace())
+        rethrow(e)
+    end
 end
 
 # Command construction helpers.
@@ -73,9 +94,10 @@ function _build_mp4_command(ffmpeg_path::String, frame_pattern::String, fps::Int
     settings = quality_settings(quality).ffmpeg
 
     # Build the command as an array of strings to be passed to ffmpeg.
+    command_parts = String[]
 
     # Start with the executable path.
-    command_parts = [ffmpeg_path]
+    push!(command_parts, ffmpeg_path)
 
     # Allow overwriting existing files without prompting.
     push!(command_parts, "-y")
@@ -109,9 +131,10 @@ function _build_gif_command(ffmpeg_path::String, frame_pattern::String, fps::Int
     width, height = resolution
 
     # Build the command as an array of strings to be passed to ffmpeg.
+    command_parts = String[]
 
     # Start with the executable path.
-    command_parts = [ffmpeg_path]
+    push!(command_parts, ffmpeg_path)
 
     # Allow overwriting existing files without prompting.
     push!(command_parts, "-y")

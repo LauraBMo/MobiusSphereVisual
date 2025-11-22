@@ -13,11 +13,6 @@ include("SetQuality.jl")
 include("FFmpegCall.jl")
 include("Files.jl")
 
-# The vectors `v` and `t` originate from the MobiusSphere package as
-# `Vector{T}` values alongside a scalar rotation `theta::T`, where `T`
-# represents a real-like numeric type (for example `CalciumFieldElem`).
-# This wrapper narrows the signature to `Float64` inputs for a predictable
-# rendering pipeline while keeping the call surface familiar.
 """
     render_mobius_animation(v, theta, t; output="mobius.mp4", fps=30,
                             resolution=(1280,720), nframes=150, quality=:high)
@@ -31,7 +26,7 @@ directory alongside the exported video for debugging or post-processing. When
 you need to fine-tune ray-tracing parameters beyond a preset, provide
 `sampling=(antialias="On", antialias_depth=4, sampling_method=2,
 antialias_threshold=0.05, radiosity=true, photons=true,
-flags="+A0.05\n+AM2 +R3")` or similar overrides. Setting `radiosity=true`
+flags="+A0.05\\n+AM2 +R3")` or similar overrides. Setting `radiosity=true`
 or `photons=true` injects tuned global illumination blocks into the POV-Ray
 scene without touching the template on disk.
 """
@@ -47,36 +42,43 @@ function render_mobius_animation(
     sampling::Union{Nothing,NamedTuple,Dict}=nothing,
     keep_temp::Bool=false,
 )
-    # Ensure the axis, angle, and translation parameters are well formed.
-    v = validate_inputs(v, theta, t)
-    resolution = _validate_resolution(resolution)
+    # Validate inputs and resolution
+    validated_v = validate_inputs(v, theta, t)
+    validated_resolution = _validate_resolution(resolution)
 
+    # Ensure output path is absolute and parent directory exists
     output_path = abspath(output)
     parent_dir = dirname(output_path)
     if parent_dir != "."
-        # Create the target directory when rendering into a nested path.
         mkpath(parent_dir)
     end
 
     preserved_dir = Ref{Union{Nothing,String}}(nothing)
+    
+    # Create temporary directory for rendering work
     mktempdir() do output_dir
-        # Populate the temporary folder with shared POV-Ray macros.
+        @debug "Using temporary directory: $output_dir"
+        
+        # Prepare rendering environment
         copy_macros(output_dir)
+        
+        # Generate POV-Ray scene and configuration files
         ini_file, povscene = generate_pov(
-            v, theta, t,
+            validated_v, theta, t,
             output_dir,
             nframes,
-            resolution;
+            validated_resolution;
             quality = quality,
             sampling = sampling,
         )
 
-        # Render frames with POV-Ray before combining them into a video.
+        # Render frames with POV-Ray
         povraycall(output_dir, ini_file)
 
-        # Assemble the video or GIF with ffmpeg using the rendered frames.
-        ffmpegcall(output_dir, output_path, fps, resolution, quality)
+        # Combine frames into video/gif using FFmpeg
+        ffmpegcall(output_dir, output_path, fps, validated_resolution, quality)
 
+        # Optionally preserve temporary files
         if keep_temp
             dest_dir = derived_temp_destination(output_path)
             if ispath(dest_dir)
@@ -93,6 +95,7 @@ function render_mobius_animation(
     end
 
     @info "Animation saved to: $output_path"
+    return output_path
 end
 
 end # module
