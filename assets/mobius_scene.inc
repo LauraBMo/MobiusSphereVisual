@@ -1,5 +1,5 @@
 // ===============================================
-// Scene Configuration for Möbius Sphere
+// Scene Configuration for Mobius Sphere
 // ===============================================
 
 // Camera setup
@@ -13,7 +13,7 @@
 // Background color
 #declare BackgroundColor = color rgb <0.02, 0.02, 0.08>
 
-// Light source at the north pole of the Möbius ball
+// Light source at the north pole of the Mobius ball
 #declare NorthPoleLight = 
   light_source { 
     <0, 1.001, 0>, 

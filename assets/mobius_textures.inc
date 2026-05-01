@@ -1,5 +1,5 @@
 // ===============================================
-// Textures for Möbius Sphere Scene
+// Textures for Mobius Sphere Scene
 // ===============================================
 
 // Gray checker floor texture
@@ -18,7 +18,7 @@
     }
   }
 
-// Rainbow pigment (argument coloring) for the Möbius ball
+// Rainbow pigment (argument coloring) for the Mobius ball
 #declare RainbowPolar = pigment {
   onion
   warp { spherical }

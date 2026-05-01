@@ -19,8 +19,8 @@ background { BackgroundColor }
 object { FloorPlane }
 
 // Compute current transform based on clock:
-//   first half  (clock ∈ [0, 0.5]): pure rotation ramping up to THETA
-//   second half (clock ∈ [0.5, 1]): hold rotation at THETA, ramp in translation
+//   first half  (clock in [0, 0.5]): pure rotation ramping up to THETA
+//   second half (clock in [0.5, 1]): hold rotation at THETA, ramp in translation
 #if (clock <= 0.5)
   #declare CurrentTransform = transform {
     #local rot_ang = clock * 2 * @THETA@;
@@ -44,7 +44,7 @@ sphere {
   no_shadow
 }
 
-// Möbius ball: glass shell + argument-coloured lower hemisphere + highlight sheen
+// Mobius ball: glass shell + argument-coloured lower hemisphere + highlight sheen
 #declare MoebiusBall =
   union {
     SphereGlassShell()

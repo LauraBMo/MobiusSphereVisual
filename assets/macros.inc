@@ -1,5 +1,5 @@
 // ===============================================
-// Macros for Möbius Sphere Visualizer
+// Macros for Mobius Sphere Visualizer
 // ===============================================
 
 // Rainbow pigment (argument coloring)
@@ -38,7 +38,7 @@
   }
 #end
 
-// Glass shell inspired by the luminous sphere in "Möbius Transformations Revealed":
+// Glass shell inspired by the luminous sphere in "Mobius Transformations Revealed":
 // - Fresnel reflection keeps the rim highlights bright while preserving transparency.
 // - IOR 1.52 approximates the dense glass used in the film's reference model.
 #macro SphereGlassShell()
