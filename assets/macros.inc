@@ -21,8 +21,8 @@
 #end
 
 // Spherical lat/long grid pigment
-#declare Fn_long = function(x,y,z) { atan2(z,x) }
-#declare Fn_lat  = function(x,y,z) { acos(y/sqrt(x*x+y*y+z*z)) }
+#declare Fn_long = function(x,y,z) { atan2(z,x) };
+#declare Fn_lat  = function(x,y,z) { acos(y/sqrt(x*x+y*y+z*z)) };
 
 #macro GridPigment(delta_lat, delta_lon, eps)
   pigment {
@@ -56,7 +56,6 @@
     }
     interior {
       ior 1.52
-      // Long fade settings mimic the subtle absorption in the cinematography plates.
       fade_power 1001
       fade_distance 5
     }

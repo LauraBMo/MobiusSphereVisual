@@ -2,8 +2,7 @@
 // Textures for Mobius Sphere Scene
 // ===============================================
 
-// Gray checker floor texture
-#declare GrayCheckerFloor = 
+#declare GrayCheckerFloor =
   texture {
     pigment {
       checker
@@ -16,9 +15,8 @@
       diffuse 0.7
       reflection 0.1
     }
-  }
+  };
 
-// Rainbow pigment (argument coloring) for the Mobius ball
 #declare RainbowPolar = pigment {
   onion
   warp { spherical }
@@ -30,4 +28,4 @@
     [1.00 color rgbf <0.3,0.3,1,0.5>]   // wrap back to indigo
   }
   scale 0.25
-}
+};
