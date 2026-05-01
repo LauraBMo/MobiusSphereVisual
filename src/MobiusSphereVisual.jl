@@ -8,27 +8,24 @@ export render_mobius_animation
 
 const ASSETS_DIR = joinpath(@__DIR__, "..", "assets")
 
-include("Utils.jl")
-include("SetQuality.jl")
-include("FFmpegCall.jl")
-include("Files.jl")
+include("Emit.jl")
+include("Render.jl")
 
 """
     render_mobius_animation(v, theta, t; output="mobius.mp4", fps=30,
                             resolution=(1280,720), nframes=150, quality=:high)
 
-Render a Möbius sphere animation in the style of "Möbius Transformations Revealed".
-`theta` is specified in radians and converted to degrees for the POV-Ray scene.
-The `quality` keyword toggles coordinated POV-Ray and ffmpeg presets ranging
-from `:draft` (fastest) through `:film` (highest fidelity), with `:high`
-remaining the default. Set `keep_temp=true` to retain the rendered frame
-directory alongside the exported video for debugging or post-processing. When
-you need to fine-tune ray-tracing parameters beyond a preset, provide
-`sampling=(antialias="On", antialias_depth=4, sampling_method=2,
-antialias_threshold=0.05, radiosity=true, photons=true,
-flags="+A0.05\\n+AM2 +R3")` or similar overrides. Setting `radiosity=true`
-or `photons=true` injects tuned global illumination blocks into the POV-Ray
-scene without touching the template on disk.
+Render a Möbius sphere animation in the style of “Möbius Transformations Revealed”.
+
+`v` is the 3D rotation axis (unit vector, z-up convention matching MobiusSphere).
+`theta` is the rotation angle in radians (converted to degrees for POV-Ray).
+`t` is the 3D translation vector.
+
+`quality` is one of `:draft` (fastest, ~30 s on a laptop), `:medium`, `:high`,
+`:ultra`, or `:film` (highest fidelity). Set `keep_temp=true` to retain the
+rendered frame directory alongside the exported video for debugging.
+
+Optional `sampling` NamedTuple or Dict overrides individual POV-Ray sampling fields.
 """
 function render_mobius_animation(
     v::Vector{Float64},
@@ -42,57 +39,42 @@ function render_mobius_animation(
     sampling::Union{Nothing,NamedTuple,Dict}=nothing,
     keep_temp::Bool=false,
 )
-    # Validate inputs and resolution
     validated_v = validate_inputs(v, theta, t)
     validated_resolution = _validate_resolution(resolution)
 
-    # Ensure output path is absolute and parent directory exists
     output_path = abspath(output)
-    parent_dir = dirname(output_path)
-    if parent_dir != "."
-        mkpath(parent_dir)
-    end
+    mkpath(dirname(output_path))
 
     preserved_dir = Ref{Union{Nothing,String}}(nothing)
-    
-    # Create temporary directory for rendering work
+
     mktempdir() do output_dir
         @debug "Using temporary directory: $output_dir"
-        
-        # Prepare rendering environment
-        copy_macros(output_dir)
-        
-        # Generate POV-Ray scene and configuration files
-        ini_file, povscene = generate_pov(
+
+        copy_assets(output_dir)
+
+        ini_file, _scene = generate_pov(
             validated_v, theta, t,
             output_dir,
             nframes,
             validated_resolution;
-            quality = quality,
-            sampling = sampling,
+            quality=quality,
+            sampling=sampling,
         )
 
-        # Render frames with POV-Ray
         povraycall(output_dir, ini_file)
-
-        # Combine frames into video/gif using FFmpeg
         ffmpegcall(output_dir, output_path, fps, validated_resolution, quality)
 
-        # Optionally preserve temporary files
         if keep_temp
             dest_dir = derived_temp_destination(output_path)
-            if ispath(dest_dir)
-                rm(dest_dir; recursive=true)
-            end
+            ispath(dest_dir) && rm(dest_dir; recursive=true)
             cp(output_dir, dest_dir; force=true)
             preserved_dir[] = dest_dir
             @info "Preserved temporary frames at: $dest_dir"
         end
     end
 
-    if keep_temp && !isnothing(preserved_dir[])
+    keep_temp && !isnothing(preserved_dir[]) &&
         @info "Temporary assets copied to: $(preserved_dir[])"
-    end
 
     @info "Animation saved to: $output_path"
     return output_path
