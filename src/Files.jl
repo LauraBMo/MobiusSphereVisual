@@ -132,15 +132,13 @@ end
     copy_macros(output_dir)
 """
 function copy_macros(output_dir::String)
-    _file = "macros.inc"
-    _path = joinpath(ASSETS_DIR, _file)
-    if !isfile(_path)
-        error("Missing file: $_path")
+    files = ["mobius_macros.inc", "mobius_textures.inc", "mobius_scene.inc"]
+    for _file in files
+        _path = joinpath(ASSETS_DIR, _file)
+        if !isfile(_path)
+            error("Missing asset file: $_path")
+        end
+        cp(_path, joinpath(output_dir, _file))
+        @debug "Copied $(_file) to: $output_dir"
     end
-
-    dest_path = joinpath(output_dir, _file)
-    # Copy the shared macros file into the temporary render directory.
-    cp(_path, dest_path)
-    @debug "Copied macros file to: $dest_path"
-    return _file
 end

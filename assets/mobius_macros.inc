@@ -1,47 +1,62 @@
-// ===============================================
-// Macros for Möbius Sphere Scene
-// ===============================================
+// ===================================================
+// Macros for Mobius Sphere Scene  (ASCII-only)
+// ===================================================
 
-// Function definitions for latitude and longitude
-#declare Fn_long = function(x,y,z) { atan2(z,x) }
-#declare Fn_lat  = function(x,y,z) { acos(y/sqrt(x*x+y*y+z*z)) }
+// Longitude: raw atan2 in [-pi, pi], and normalized to [0, 2*pi).
+#declare Fn_long     = function(x,y,z) { atan2(z,x) }
+#declare Fn_long_01  = function(x,y,z) { mod(atan2(z,x) + 2*pi, 2*pi) }
+// Latitude: acos gives [0, pi]; 0 at north pole, pi at south pole.
+#declare Fn_lat      = function(x,y,z) { acos(y/sqrt(x*x+y*y+z*z)) }
 
-// Rainbow pigment (argument coloring) macro
+// --------------------------------------------------
+// Rainbow pigment: argument (longitude) as hue wheel
+// --------------------------------------------------
+// Formula normalizes atan2 in [-pi,pi] to [0,1] with red at angle=0
+// (positive x-axis), matching the standard argument-coloring convention.
+// Pure rgb with no filter keeps the colours saturated and opaque.
 #macro RainbowPigment()
   pigment {
-    function { atan2(z,x) } // longitude angle
+    function { mod(atan2(z,x) + 2*pi, 2*pi) / (2*pi) }
     color_map {
-      // rgbf entries keep ~30% filter so transmitted light inherits the tint,
-      // letting the argument cap cast the prismatic shadow seen in the film.
-      [0.0 rgbf <1,0,0,0.3>]
-      [0.16 rgbf <1,1,0,0.3>]
-      [0.33 rgbf <0,1,0,0.3>]
-      [0.50 rgbf <0,1,1,0.3>]
-      [0.66 rgbf <0,0,1,0.3>]
-      [0.83 rgbf <1,0,1,0.3>]
-      [1.0 rgbf <1,0,0,0.3>]
+      [0.00 rgb <1,0,0>]
+      [0.16 rgb <1,1,0>]
+      [0.33 rgb <0,1,0>]
+      [0.50 rgb <0,1,1>]
+      [0.66 rgb <0,0,1>]
+      [0.83 rgb <1,0,1>]
+      [1.00 rgb <1,0,0>]
     }
   }
 #end
 
-// Spherical lat/long grid pigment
+// --------------------------------------------------
+// Grid pigment: symmetric distance for uniform lines
+// --------------------------------------------------
+// Using min(mod, spacing - mod) gives equal-width lines on both sides
+// of each grid angle instead of the one-sided artifact from mod alone.
+// delta_lat / delta_lon in radians; eps controls line half-width.
 #macro GridPigment(delta_lat, delta_lon, eps)
   pigment {
     function {
-      (abs(mod(Fn_lat(x,y,z), delta_lat)) < eps) |
-      (abs(mod(Fn_long(x,y,z), delta_lon)) < eps)
+      (min(mod(Fn_lat(x,y,z), delta_lat),
+           delta_lat - mod(Fn_lat(x,y,z), delta_lat)) < eps) |
+      (min(mod(Fn_long_01(x,y,z), delta_lon),
+           delta_lon - mod(Fn_long_01(x,y,z), delta_lon)) < eps)
     }
     color_map {
-      [0 rgbt <0,0,0,1>]
-      [0.5 rgb <0,0,0>]
-      [1 rgb <0,0,0>]
+      [0.0 rgbt <0,0,0,1>]
+      [0.5 rgb  <0,0,0>]
+      [1.0 rgb  <0,0,0>]
     }
   }
 #end
 
-// Glass shell inspired by the luminous sphere in "Möbius Transformations Revealed":
-// - Fresnel reflection keeps the rim highlights bright while preserving transparency.
-// - IOR 1.52 approximates the dense glass used in the film's reference model.
+// --------------------------------------------------
+// Glass shell: the outer transparent sphere
+// --------------------------------------------------
+// Strong Fresnel range (0.03 -> 0.95) keeps the rim bright while
+// leaving the face mostly transparent so the coloured cap shows through.
+// Tight roughness 0.001 gives the sharp specular spot in the Arnold film.
 #macro SphereGlassShell()
   sphere { <0,0,0>, 1
     texture {
@@ -49,59 +64,60 @@
       finish {
         ambient 0
         diffuse 0
-        specular 0.85
-        roughness 0.002
-        reflection { 0.02, 0.25 fresnel on }
+        specular 1.0
+        roughness 0.001
+        reflection { 0.03, 0.95 fresnel on }
         conserve_energy
       }
     }
     interior {
       ior 1.52
-      // Long fade settings mimic the subtle absorption in the cinematography plates.
-      fade_power 1001
-      fade_distance 5
+      fade_color rgb <0.92, 0.93, 1.0>
+      fade_distance 3
+      fade_power 2
     }
     hollow on
   }
 #end
 
-// Argument-colored cap matches the saturated stereographic disk from the film:
-// - Rainbow pigment reproduces the argument ramp.
-// - Grid overlay echoes the lat/long guide used to explain mappings.
+// --------------------------------------------------
+// Argument-coloured lower hemisphere
+// --------------------------------------------------
+// Clipped at y<=0 (equator) to expose the saturated hue wheel on the
+// south half while leaving the north half as clear glass.
+// Grid layer overlaid on top via a second texture.
 #macro SphereArgumentCap(delta_lat, delta_lon, eps)
   sphere { <0,0,0>, 1
     texture {
       RainbowPigment()
       finish {
-        ambient 0
-        diffuse 0.12
-        specular 0.45
-        roughness 0.005
-        reflection 0.05
+        ambient 0.02
+        diffuse 0.85
+        specular 0.35
+        roughness 0.008
+        reflection 0.04
         conserve_energy
       }
     }
     texture {
       GridPigment(delta_lat, delta_lon, eps)
       finish {
-        ambient 0.1
-        diffuse 0.25
-        specular 0.1
-        roughness 0.015
+        ambient 0
+        diffuse 0.5
+        specular 0.05
+        roughness 0.05
       }
     }
-    interior {
-      ior 1.36
-      fade_color rgb <0.8, 0.9, 1.2>
-      fade_distance 6
-      fade_power 2
-    }
     hollow on
-    clipped_by { plane { y, 0.8 } }  // Clipped at y = 0.8 as requested
+    clipped_by { plane { y, 0 } }
   }
 #end
 
-// Thin sheen layer adds the soft bloom present in the cinematography plates.
+// --------------------------------------------------
+// Specular sheen over the coloured cap
+// --------------------------------------------------
+// A transparent layer with tight specular makes the lower hemisphere
+// look glassy without hiding the rainbow colours underneath.
 #macro SphereHighlightSheen()
   sphere { <0,0,0>, 1
     texture {
@@ -109,20 +125,19 @@
       finish {
         ambient 0
         diffuse 0
-        specular 0.4
-        roughness 0.015
-        metallic 0.1
+        specular 0.6
+        roughness 0.008
       }
     }
     clipped_by { plane { y, 0 } }
   }
 #end
 
-// Complete sphere with glass shell, argument cap and highlight sheen
+// Convenience macro: full sphere assembly used in the template.
 #macro SphereGrid()
   union {
     SphereGlassShell()
-    SphereArgumentCap(pi/8, pi/8, 0.02)
+    SphereArgumentCap(pi/8, pi/8, 0.015)
     SphereHighlightSheen()
   }
 #end

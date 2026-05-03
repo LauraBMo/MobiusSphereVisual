@@ -1,33 +1,26 @@
-// ===============================================
-// Textures for Möbius Sphere Scene
-// ===============================================
+// ===================================================
+// Textures for Mobius Sphere Scene  (ASCII-only)
+// ===================================================
 
-// Gray checker floor texture
-#declare GrayCheckerFloor = 
+// --------------------------------------------------
+// Floor: dark checker, barely visible
+// --------------------------------------------------
+// Very low-contrast pair of near-blacks so the floor does not
+// compete with the sphere for attention, while a gentle Fresnel
+// reflection lets the sphere cast a soft mirror image below.
+#declare GrayCheckerFloor =
   texture {
     pigment {
       checker
-      color rgbf <0.8, 0.8, 0.8, 0.5>
-      color rgbf <0.6, 0.6, 0.6, 0.5>
-      scale 0.4
+      color rgb <0.04, 0.04, 0.05>
+      color rgb <0.08, 0.08, 0.10>
+      scale 0.55
     }
     finish {
-      ambient 0.3
-      diffuse 0.7
-      reflection 0.1
+      ambient 0
+      diffuse 0.6
+      reflection { 0.12, 0.18 fresnel on }
+      specular 0.05
+      roughness 0.3
     }
   }
-
-// Rainbow pigment (argument coloring) for the Möbius ball
-#declare RainbowPolar = pigment {
-  onion
-  warp { spherical }
-  color_map {
-    [0.00 color rgbf <0.3,0.3,1,0.5>]   // indigo
-    [0.30 color rgbf <0.0,1,0.5,0.5>]   // green
-    [0.60 color rgbf <1,0.7,0.0,0.5>]   // orange
-    [0.90 color rgbf <0.6,0.0,1,0.5>]   // violet
-    [1.00 color rgbf <0.3,0.3,1,0.5>]   // wrap back to indigo
-  }
-  scale 0.25
-}
