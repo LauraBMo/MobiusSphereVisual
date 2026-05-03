@@ -130,17 +130,21 @@ end
 
 """
     copy_macros(output_dir)
-"""
-function copy_macros(output_dir::String)
-    _file = "macros.inc"
-    _path = joinpath(ASSETS_DIR, _file)
-    if !isfile(_path)
-        error("Missing file: $_path")
-    end
 
-    dest_path = joinpath(output_dir, _file)
-    # Copy the shared macros file into the temporary render directory.
-    cp(_path, dest_path)
-    @debug "Copied macros file to: $dest_path"
-    return _file
+Copy every `.inc` file referenced by `mobius_template.pov` into `output_dir`
+so POV-Ray can resolve them when invoked with the temp directory as cwd.
+Any new `.inc` added to the template must be appended to `INCLUDES`.
+"""
+const INCLUDES = ("mobius_macros.inc", "mobius_textures.inc", "mobius_scene.inc")
+
+function copy_macros(output_dir::String)
+    for _file in INCLUDES
+        _path = joinpath(ASSETS_DIR, _file)
+        if !isfile(_path)
+            error("Missing file: $_path")
+        end
+        cp(_path, joinpath(output_dir, _file))
+        @debug "Copied include into render dir: $_file"
+    end
+    return INCLUDES
 end

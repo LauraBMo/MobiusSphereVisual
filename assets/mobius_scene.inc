@@ -1,35 +1,36 @@
 // ===============================================
-// Scene Configuration for Möbius Sphere
+// Scene Configuration for Mobius Sphere
 // ===============================================
 
-// Camera setup
-#declare MobiusCamera = 
+// Camera: slightly elevated, looking down ~17 degrees with the ball centered
+// and a little headroom above for the rim highlight.
+#declare MobiusCamera =
   camera {
-    location <0, 3, -8>
-    look_at <0, 1, 0>
-    angle 35
+    location <0, 2.4, -7.5>
+    look_at <0, 0.55, 0>
+    angle 32
   }
 
-// Background color
-#declare BackgroundColor = color rgb <0.02, 0.02, 0.08>
+// Background: near-black so the lit orb pops cinematically.
+#declare BackgroundColor = color rgb <0.005, 0.006, 0.012>;
 
-// Light source at the north pole of the Möbius ball
-#declare NorthPoleLight = 
-  light_source { 
-    <0, 1.001, 0>, 
-    rgb <2.1, 2.1, 1.4> * 0.55 
-  }
+// Soft fill from camera-side, low intensity, no shadows. Gives the colored
+// lower hemisphere a gentle wash without flattening the Fresnel rim.
+light_source {
+  <-2.5, 1.4, -6.5>,
+  rgb <0.32, 0.34, 0.40>
+  shadowless
+}
 
-// Light source position marker
-#declare LightMarker = 
-  sphere {
-    <0, 1.001, 0>, 0.02
-    texture { pigment { color rgb <1,0.9,0.6> } finish { emission 1 } }
-    no_shadow
-  }
+// Cool back-rim light to lift the silhouette against the dark background.
+light_source {
+  <2.0, 0.6, 4.0>,
+  rgb <0.18, 0.22, 0.30>
+  shadowless
+}
 
 // Floor plane with checker texture
-#declare FloorPlane = 
+#declare FloorPlane =
   plane {
     y, -1
     texture { GrayCheckerFloor }

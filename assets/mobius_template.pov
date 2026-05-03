@@ -22,30 +22,6 @@ background { BackgroundColor }
 // Use the configured floor
 object { FloorPlane }
 
-// plane { y, 0
-  //   pigment{
-    //     checker White Black
-    //     scale 0.5
-    //   }
-  // }
-
-// #declare RainbowPolar = pigment {
-  //   uv_mapping
-  //   gradient u
-  //   color_map {
-    //     [0.00 rgb <1,0,0>]
-    //     [0.16 rgb <1,1,0>]
-    //     [0.33 rgb <0,1,0>]
-    //     [0.50 rgb <0,1,1>]
-    //     [0.66 rgb <0,0,1>]
-    //     [0.83 rgb <1,0,1>]
-    //     [1.00 rgb <1,0,0>]
-    //   }
-  //   quick_color rgb <1,0.5,0>
-  // }
-
-
-
 // Compute current transform based on clock
 #if (clock <= 0.5)
   #declare CurrentTransform = transform {
@@ -63,26 +39,30 @@ object { FloorPlane }
 #declare BaseNorthPole = <0, 1.001, 0>;
 #declare CurrentNorthPole = vtransform(BaseNorthPole, CurrentTransform);
 
-// Emissive light at current north pole (using updated position)
-light_source { CurrentNorthPole, rgb <2.1, 2.1, 1.4> * 0.55 }
+// Tracked key light at the current north pole. Warm and bright so the cap
+// reads as illuminated from inside the orb, with a small fade so it does not
+// overwhelm the static fills.
+light_source {
+  CurrentNorthPole,
+  rgb <2.4, 2.2, 1.5> * 0.7
+  fade_distance 3
+  fade_power 2
+}
 
-// small visible marker for the light source
+// Small visible marker so the audience can locate the point light.
 sphere {
   CurrentNorthPole, 0.02
-  texture { pigment { color rgb <1,0.9,0.6> } finish { emission 1 } }
+  texture { pigment { color rgb <1, 0.9, 0.6> } finish { emission 1.0 } }
   no_shadow
 }
 
-// The Möbius ball - a blurry unit ball with rainbow-colored gird covering the bottom half up to 0.8 in height
+// Mobius ball: outer Fresnel glass shell, opaque rainbow argument cap on the
+// lower hemisphere (slightly inside the shell to avoid coplanar surfaces),
+// and a thin sheen on the upper hemisphere for the rim highlight.
 #declare MoebiusBall =
   union {
-    // Glass shell for the blurry effect
     SphereGlassShell()
-    
-    // Rainbow-colored gird covering the bottom half up to 0.8 in height
     SphereArgumentCap(pi/8, pi/8, 0.02)
-    
-    // Highlight sheen
     SphereHighlightSheen()
   };
 
