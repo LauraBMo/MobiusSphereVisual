@@ -1,0 +1,56 @@
+```@meta
+CurrentModule = MobiusSphereVisual
+```
+
+# MobiusSphereVisual
+
+Render Möbius transformations on the Riemann sphere using POV-Ray.
+
+## Quick start
+
+```julia
+using MobiusSphereVisual
+
+v = [0.0, 0.0, 1.0]
+theta = pi / 2
+t = [0.2, 0.0, 0.0]
+
+render_mobius_animation(v, theta, t; output="demo.mp4", nframes=120)
+```
+
+## Examples
+
+See `Laura.org` in the repository root for runnable example workflows that render classic
+Möbius motions such as a 90° rotation or a loxodromic spiral. Each code block
+shows the arguments passed directly into [`render_mobius_animation`](@ref)
+so you can tweak the vectors, angle, or keyword parameters to suit your
+own scene.
+
+## Using coefficients from MobiusSphere.jl
+
+`MobiusSphere.jl` returns coefficient objects that carry the axis, rotation angle and translation used by the Möbius motion. Destructure the triple into `(v, theta, t)` before calling the renderer so the arguments match the current method signature:
+
+```julia
+using MobiusSphereVisual
+
+coeffs = ([0.0, 0.0, 1.0], pi / 2, [0.2, 0.0, 0.0])
+
+v, theta, t = coeffs
+render_mobius_animation(v, theta, t; output="from_coeffs.mp4", nframes=120)
+```
+
+## Rendering guide
+
+```@contents
+Pages = [
+    "quality_presets.md",
+    "sampling_overrides.md",
+]
+Depth = 2
+```
+
+Explore the quality presets and sampling overrides for [`render_mobius_animation`](@ref) to tailor visual fidelity and render time to your project.
+
+```@autodocs
+Modules = [MobiusSphereVisual]
+```

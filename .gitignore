@@ -1,0 +1,30 @@
+# Julia (library: don't commit resolved manifests)
+Manifest.toml
+docs/Manifest.toml
+docs/build/
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+
+# Rendered output, media, reference material (not package code)
+*.mp4
+*.webm
+*.gif
+*.png
+*.jpg
+*.pdf
+*.zip
+
+# Local scratch & experiments
+/Laura.org
+/mobius/
+/scene_build.sh
+/scene*.pov
+/src/MobiusSphereVisual1.jl
+
+# Tooling / editors / OS
+/.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
