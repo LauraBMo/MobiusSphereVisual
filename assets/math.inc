@@ -7,7 +7,9 @@
 #declare Clamp01 = function(a)     { min(max(a, 0), 1) };
 #declare Frac    = function(q)     { q - floor(q) };
 #declare DistInt = function(q)     { min(Frac(q), 1 - Frac(q)) };
-#declare Line    = function(q, hw) { 1 - Clamp01(DistInt(q)/hw) };
+// boxcar profile: 1 inside the half-width, 0 outside -> sharp pure-black lines
+// (no grey triangular ramp). POV antialiasing crisps the edges at render time.
+#declare Line    = function(q, hw) { select(hw - DistInt(q), 0, 1) };
 
 // inverse stereographic projection (unit sphere, pole = +y,
 // tangent plane at the south pole)

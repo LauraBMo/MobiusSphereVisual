@@ -30,9 +30,18 @@
 #end
 
 #macro ProjectionShell(Pos, Radius)
+  // visible opaque colour cap — casts NO shadow (appearance only)
   sphere { <0,0,0>, Radius
-    texture { T_Patch }
+    texture { T_PatchView }
     texture { T_Wire }
+    no_shadow
+    translate Pos
+  }
+  // caustic caster — invisible to the camera, projects the coloured shadow/caustic
+  sphere { <0,0,0>, Radius
+    texture { T_PatchCaustic }
+    texture { T_Wire }
+    no_image
     translate Pos
   }
 #end

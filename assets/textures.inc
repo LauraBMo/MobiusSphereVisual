@@ -45,8 +45,8 @@
            specular 0.25 phong 0.3 phong_size 25 }
 };
 
-// ---------- sphere: rainbow patch ----------
-#declare T_Patch = texture {
+// ---------- sphere: rainbow patch, CAUSTIC caster (filter tuned to the floor) ----------
+#declare T_PatchCaustic = texture {
   pigment {
     function { PatchVal(x, y, z) }
     color_map {
@@ -54,8 +54,28 @@
       [0.17 color R1 filter FilterAmt]
       [0.34 color R2 filter FilterAmt]
       [0.51 color R3 filter FilterAmt]
-      [0.68 color R4 filter FilterAmt]
+      [0.66 color R4 filter FilterAmt]
+      [0.78 color <1.0, 0.50, 0.05> filter FilterAmt]
       [0.85 color R5 filter FilterAmt]
+      [0.86 rgbt <0,0,0,1>]
+      [1.00 rgbt <0,0,0,1>]
+    }
+  }
+  finish { ambient rgb AmbPatch diffuse 0.90 }
+};
+
+// ---------- sphere: rainbow patch, VISIBLE cap (opaque, low filter) ----------
+#declare T_PatchView = texture {
+  pigment {
+    function { PatchVal(x, y, z) }
+    color_map {
+      [0.00 color R0 filter FilterView]
+      [0.17 color R1 filter FilterView]
+      [0.34 color R2 filter FilterView]
+      [0.51 color R3 filter FilterView]
+      [0.66 color R4 filter FilterView]
+      [0.78 color <1.0, 0.50, 0.05> filter FilterView]
+      [0.85 color R5 filter FilterView]
       [0.86 rgbt <0,0,0,1>]
       [1.00 rgbt <0,0,0,1>]
     }
