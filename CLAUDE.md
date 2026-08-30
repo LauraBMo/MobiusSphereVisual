@@ -52,9 +52,20 @@ not a photon caustic. So:
 - Painting the coloured projection onto the scene is **correct now** — the
   earlier rule ("the floor colour must be the photon caustic; never paint it")
   is retired.
-- The pole light and glow-dot follow the **transformed north pole** each frame
-  (`PoleNow`), driven by `clock`: phase 1 (clock ≤ 0.5) rotates about the sphere
-  centre by `θ`, phase 2 translates by `t`.
+- **(2026-08-30)** The projector light and glow-dot sit at **`SphCentre + <0,1,0>`**
+  (`PoleNow` in `mobius_template.pov`) — straight above the sphere centre in
+  world-up. They follow the phase-2 **translation** but **not** the phase-1
+  rotation: a fixed overhead lamp with the pattern spinning underneath, per
+  Siliciano's convention. (Earlier the pole tracked the *rotated* north pole — that
+  swung the lamp off-axis during rotation and was wrong.)
+- **(2026-08-30) The sphere may descend below the floor, and that is correct — do
+  not clamp it.** For a Möbius map with a shrinking component (every "accidental"
+  map has one), the paper's rigid motion lowers the sphere and its lower cap passes
+  below the fixed floor. The only invariant the paper guarantees is that the
+  **north pole (projector light) stays above the floor** — admissibility, centre
+  height `c > -1` — NOT the whole sphere. The opaque floor hides the submerged cap.
+  `MobiusSphere.Mobius_to_rigid` is faithful to the paper (verified: shrink→down,
+  magnify→up, rotate→spin, translate→slide) and must not be "corrected".
 - The rainbow patch uses the `filter` channel so the glass reads through it; the
   black grid (`WireMask`) stays opaque. Palette/material knobs live in
   `assets/setup.inc`.

@@ -22,7 +22,6 @@ global_settings { assumed_gamma 1.0 }
 #declare Tv  = <@T_X@, @T_Y@, @T_Z@>;
 
 #declare SphC0    = <0, 1.0, 0>;      // rest sphere centre (radius 1, sits on the floor)
-#declare PoleBase = SphC0 + <0, 1, 0>;
 
 // ---------- clock-driven motion: phase 1 rotates about the centre, phase 2 translates ----------
 #if (clock <= 0.5)
@@ -32,7 +31,7 @@ global_settings { assumed_gamma 1.0 }
     Axis_Rotate_Trans(Vax, Ang)
     translate  SphC0
   }
-  #declare PoleNow = vaxis_rotate(PoleBase - SphC0, Vax, Ang) + SphC0;
+  #declare SphCNow = SphC0;                            // rotation about the centre leaves it fixed
 #else
   #declare Motion = transform {
     translate -SphC0
@@ -40,8 +39,13 @@ global_settings { assumed_gamma 1.0 }
     translate  SphC0
     translate  Tv * (clock - 0.5) * 2
   }
-  #declare PoleNow = vaxis_rotate(PoleBase - SphC0, Vax, Th) + SphC0 + Tv * (clock - 0.5) * 2;
+  #declare SphCNow = SphC0 + Tv * (clock - 0.5) * 2;   // centre follows the translation
 #end
+
+// Projector light + glow: straight above the sphere centre (world-up), so it follows the
+// translation but NOT the rotation — a fixed lamp at the top, the pattern spinning under it.
+// Admissibility (paper) keeps this above the floor; the sphere's lower cap may dip below.
+#declare PoleNow = SphCNow + <0, 1, 0>;
 
 // ---------- camera ----------
 camera {
