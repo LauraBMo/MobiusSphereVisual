@@ -48,8 +48,10 @@ global_settings { assumed_gamma 1.0 }
 #declare PoleNow = SphCNow + <0, 1, 0>;
 
 // ---------- camera ----------
+// Front of the rotation: mirror of the old <4.5,3.4,-8.0> through the vertical
+// axis (negate x and z), so we watch the pattern turn towards us, not away.
 camera {
-  location <4.5, 3.4, -8.0>
+  location <-4.5, 3.4, 8.0>
   look_at  <0, 0.9, 0>
   right x * image_width/image_height
   angle 42
@@ -74,3 +76,6 @@ AxisPin(2.45)                                   // static world reference axis
 union { GlassBall(SphC0, 1)           transform { Motion } }
 union { ProjectionShell(SphC0, 1.001) transform { Motion } }
 GlowDot(PoleNow, 0.045)
+
+// ---------- point markers (base points and their images), injected by Emit.jl ----------
+@MARKERS@

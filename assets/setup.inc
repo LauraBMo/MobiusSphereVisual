@@ -10,6 +10,7 @@
 #declare GridSpc = 0.5;    // floor graph-paper spacing (world grid)
 #declare WireSpc = 0.425;  // rainbow black-grid spacing (= GridSpc * A/2.0, scaled to the patch)
 #declare WireW   = 0.04;   // sphere wire half-width (grid units); boxcar Line -> solid black
+#declare UCircW  = 0.03;   // unit-circle ring half-width, in floor/SU units (grid line ≈ 0.017)
 #declare FadeR   = 20.0;   // floor fade radius
 
 // ---------- palette ----------
@@ -62,6 +63,15 @@
   InPatch(xx,yy,zz) *
   max(Line(SU(xx,yy,zz)/WireSpc, WireW),
       Line(SV(xx,yy,zz)/WireSpc, WireW))
+};
+
+// Floor unit circle FUC = {x^2 + z^2 = 1 on the floor} = {SU^2 + SV^2 = 1}; its inverse-stereo
+// image P_S0^-1(FUC) is the latitude circle at local y = -3/5 (below the equator). With the
+// rigid motion from MobiusSphere.Mobius_to_rigid_sitting (the sphere sits on the floor), the
+// caustic realises f faithfully, so FUC is the invariant unit circle carrying the roots of
+// unity: f(FUC) = FUC, and the ring stays put while the points slide along it.
+#declare UnitCircleMask = function(xx, yy, zz) {
+  select(UCircW - abs(sqrt(SU(xx,yy,zz)*SU(xx,yy,zz) + SV(xx,yy,zz)*SV(xx,yy,zz)) - 1.0), 0, 1)
 };
 
 #end

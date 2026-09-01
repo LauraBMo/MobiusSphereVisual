@@ -90,7 +90,10 @@ Trial-and-error on visuals is the normal mode of work here.
 
 - **Everything lives in `Laura.org`.** Do not create `examples/`, `demo/`, or
   similar folders, and do not add example `.jl` files at the repo root.
-- All example renders write to `/tmp/...`, never into the repo.
+- All example renders write to `/tmp/...`, never into the repo — **except** a
+  single committed showcase GIF at the repo root (`d5_accident.gif`, the d=5
+  max-k accident, 480×270 palette-optimized) kept as a current-state example.
+  Ad-hoc iteration renders still go to `/tmp`.
 
 ## POV-Ray gotchas worth remembering
 
@@ -107,10 +110,23 @@ Trial-and-error on visuals is the normal mode of work here.
 - **Built-in `radial` pattern** is more reliable for angular wedges/spokes
   than hand-rolled `select(min(...))` formulas; the latter can render
   correctly on flat surfaces but go invisible on curved sphere sections.
-- **Coordinate swap:** MobiusSphere uses z-up; POV-Ray uses y-up. The Julia
-  vector `[vx, vy, vz]` maps to the POV-Ray vector `<vx, vz, vy>` — swapping
-  the second and third components. The swap happens in
-  `src/Emit.jl :: generate_pov_scene`.
+- **Coordinate swap:** MobiusSphere uses z-up (right-handed); POV-Ray uses y-up
+  (left-handed). The Julia vector `[vx, vy, vz]` maps to the POV-Ray vector
+  `<vx, vz, vy>` — swapping the second and third components. The swap happens in
+  `src/Emit.jl :: generate_pov_scene`. **The swap is orientation-reversing, so the
+  rotation angle is negated there** (`@THETA@ => -theta_deg`): a 2↔3 swap is a
+  reflection, which flips rotation chirality, so without the negation the caustic
+  spins opposite to the Möbius map. Verified against real renders (2026-08-31): a
+  `+90°` map spun the pattern `−90°` until the angle was negated.
+- **Which decomposition feeds the render:** the scene is the *sitting* sphere
+  (rests on the floor, centre one radius up; `SU`/`SV` is the tangent-at-south-pole
+  projection, floor unit circle at radius 1), so the bridge must use
+  `MobiusSphere.Mobius_to_rigid_sitting`, **not** the centred `Mobius_to_rigid`
+  (whose invariant circle sits at radius 2 and deforms the drawn unit circle).
+  The accident→render bridge lives in the `MobiusSphereAccidentals` package
+  (`~/.julia/dev/MobiusSphereAccidentals`, `Render.jl :: accident_to_rigid`), which
+  uses the sitting variant. (It supersedes the retired loose script
+  `~/.julia/environments/MobiusSuite/accidental_mobius.jl`, removed 2026-09-01.)
 - **Stereographic radius** from a unit sphere point `(x, y, z)` to the floor
   at `y = -1` via the north pole `(0, 1, 0)` is
   `r = 2 * sqrt(x² + z²) / (1 - y)`. For the floor and sphere grid to align,

@@ -34,6 +34,7 @@
   sphere { <0,0,0>, Radius
     texture { T_PatchView }
     texture { T_Wire }
+    texture { T_UnitCircle }
     no_shadow
     translate Pos
   }
@@ -41,6 +42,7 @@
   sphere { <0,0,0>, Radius
     texture { T_PatchCaustic }
     texture { T_Wire }
+    texture { T_UnitCircle }
     no_image
     translate Pos
   }

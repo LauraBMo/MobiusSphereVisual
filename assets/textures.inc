@@ -92,6 +92,15 @@
   finish { ambient rgb AmbWire diffuse 0.60 }
 };
 
+// ---------- sphere: unit-circle ring (image of |z| = 1) ----------
+#declare T_UnitCircle = texture {
+  pigment {
+    function { UnitCircleMask(x, y, z) }
+    color_map { [0 rgbt <0,0,0,1>] [1 color C_Wire] }
+  }
+  finish { ambient rgb AmbWire diffuse 0.60 }
+};
+
 // ---------- misc ----------
 #declare T_Pin = texture {
   pigment { color C_Pin }

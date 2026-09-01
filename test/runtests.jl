@@ -202,11 +202,12 @@ end
     @test occursin("0.3", pov)
     @test occursin("0.5", pov)
 
-    # Theta in degrees
+    # Theta in degrees, NEGATED: the 2↔3 axis swap reverses rotation chirality
+    # into POV's left-handed frame, so generate_pov_scene emits -theta_deg.
     θ_deg = rad2deg(π/4)
-    @test occursin(string(θ_deg), pov)
+    @test occursin(string(-θ_deg), pov)
 
-    println("  ✓  generate_pov_scene: z→y swap, degrees conversion")
+    println("  ✓  generate_pov_scene: z→y swap, negated angle, degrees conversion")
     rm(dir; recursive=true)
 end
 

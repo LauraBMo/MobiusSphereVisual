@@ -38,6 +38,7 @@ function render_mobius_animation(
     quality::Symbol=:high,
     sampling::Union{Nothing,NamedTuple,Dict}=nothing,
     keep_temp::Bool=false,
+    markers=nothing,
 )
     validated_v = validate_inputs(v, theta, t)
     validated_resolution = _validate_resolution(resolution)
@@ -60,6 +61,7 @@ function render_mobius_animation(
             validated_resolution;
             quality=quality,
             sampling=sampling,
+            markers=markers,
         )
 
         povraycall(output_dir, ini_file)
