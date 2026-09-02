@@ -23,6 +23,7 @@
 #declare C_Glass      = rgb <1.0, 1.0, 1.0>;      // clean bright glass (slightly whiter than the old 0.96)
 #declare C_Glow       = rgb <0.25, 0.45, 1.0>;
 #declare C_Projector  = rgb <1.8, 1.77, 1.68>;   // dimmed key: caustic sits at floor level, no glow
+#declare C_Axis       = rgb <0.92, 0.73, 0.16>;  // yellowish-gold labelled coordinate axes
 
 // rainbow stops — PURE saturated hues (Arnold measured S=0.99); brightness
 // comes from the (dimmed) key light + medium-gray floor, not from the pigment.
@@ -35,7 +36,8 @@
 
 // ---------- material tuning ----------
 #declare FilterAmt   = 0.85;  // CAUSTIC cap filter — tuned so the floor matches Arnold
-#declare FilterView  = 0.10;  // VISIBLE cap filter — low => opaque, solid colour (no_shadow shell)
+#declare FilterView  = 0.35;  // VISIBLE cap TRANSMIT — NON-colouring transparency, so discs
+                              // behind keep their true colour; higher => more see-through / paler cap
 #declare GlassFilter = 0.72;  // glass transparency (lower -> whiter/milkier dome)
 #declare GlassDiff   = 0.30;  // glass milkiness
 // ambient turned down further (was 0.08/0.03/0.20/0.04/0.10) to cut the white self-glow

@@ -69,13 +69,13 @@
   pigment {
     function { PatchVal(x, y, z) }
     color_map {
-      [0.00 color R0 filter FilterView]
-      [0.17 color R1 filter FilterView]
-      [0.34 color R2 filter FilterView]
-      [0.51 color R3 filter FilterView]
-      [0.66 color R4 filter FilterView]
-      [0.78 color <1.0, 0.50, 0.05> filter FilterView]
-      [0.85 color R5 filter FilterView]
+      [0.00 color R0 transmit FilterView]
+      [0.17 color R1 transmit FilterView]
+      [0.34 color R2 transmit FilterView]
+      [0.51 color R3 transmit FilterView]
+      [0.66 color R4 transmit FilterView]
+      [0.78 color <1.0, 0.50, 0.05> transmit FilterView]
+      [0.85 color R5 transmit FilterView]
       [0.86 rgbt <0,0,0,1>]
       [1.00 rgbt <0,0,0,1>]
     }
@@ -110,6 +110,12 @@
 #declare T_Glow = texture {
   pigment { color C_Glow }
   finish { ambient rgb <0.8, 1.4, 4.0> diffuse 0 }
+};
+
+// ---------- coordinate axes: yellowish-gold, self-lit enough to read anywhere ----------
+#declare T_Axis = texture {
+  pigment { color C_Axis }
+  finish { ambient 0.45 diffuse 0.65 specular 0.30 phong 0.4 phong_size 20 }
 };
 
 #end

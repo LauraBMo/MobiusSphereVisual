@@ -48,11 +48,11 @@ global_settings { assumed_gamma 1.0 }
 #declare PoleNow = SphCNow + <0, 1, 0>;
 
 // ---------- camera ----------
-// Front of the rotation: mirror of the old <4.5,3.4,-8.0> through the vertical
-// axis (negate x and z), so we watch the pattern turn towards us, not away.
+// Edit CamLoc to move the camera; the axis labels read it too, so they always face you.
+#declare CamLoc = <8.5, 3.5, 4.5>;
 camera {
-  location <-4.5, 3.4, 8.0>
-  look_at  <0, 0.9, 0>
+  location CamLoc
+  look_at  <0, 0.7, 0>
   right x * image_width/image_height
   angle 42
 }
@@ -72,7 +72,7 @@ sky_sphere {
 
 // ---------- assembly ----------
 FloorPlane()
-AxisPin(2.45)                                   // static world reference axis
+CoordAxes(2.0, 2.3, CamLoc)                     // static gold Re/Im/vertical reference axes
 union { GlassBall(SphC0, 1)           transform { Motion } }
 union { ProjectionShell(SphC0, 1.001) transform { Motion } }
 GlowDot(PoleNow, 0.045)

@@ -208,10 +208,23 @@ function _h264_encoder()
     return nothing
 end
 
+# ── Held first/last frame ("hold") ───────────────────────────────────────────
+# `hold` resolves to seconds of cloned first/last frame padded onto the video:
+# `true` → 1.5 s (default), `false`/0 → none, a number → that many seconds.
+_hold_seconds(hold::Bool) = hold ? 1.5 : 0.0
+_hold_seconds(hold::Real) = Float64(hold)
+
+# The ffmpeg `tpad` filter string for `sec` seconds of held ends, or "" for none.
+_tpad_vf(sec::Real) = sec > 0 ?
+    "tpad=start_duration=$(sec):start_mode=clone:stop_duration=$(sec):stop_mode=clone" : ""
+
 function _build_mp4_command(ffmpeg::String, pattern::String, fps::Int, output::String,
-                            quality, encoder::String)
+                            quality, encoder::String; hold_sec::Real=1.5)
     s = quality_settings(quality).ffmpeg
-    cmd = [ffmpeg, "-y", "-framerate", "$fps", "-i", pattern, "-c:v", encoder]
+    cmd = [ffmpeg, "-y", "-framerate", "$fps", "-i", pattern]
+    vf = _tpad_vf(hold_sec)
+    isempty(vf) || append!(cmd, ["-vf", vf])
+    append!(cmd, ["-c:v", encoder])
     if encoder == "libx264"
         # x264 uses CRF + named presets.
         append!(cmd, ["-preset", s.preset, "-crf", "$(s.crf)"])
@@ -225,22 +238,28 @@ function _build_mp4_command(ffmpeg::String, pattern::String, fps::Int, output::S
     return Cmd(cmd)
 end
 
-function _build_webm_command(ffmpeg::String, pattern::String, fps::Int, output::String, quality)
+function _build_webm_command(ffmpeg::String, pattern::String, fps::Int, output::String,
+                             quality; hold_sec::Real=1.5)
     s = quality_settings(quality).ffmpeg
     vp9_crf = clamp(s.crf + 8, 10, 40)   # shift x264-scale CRF into VP9's 0–63 range
-    return Cmd([ffmpeg, "-y",
-                "-framerate", "$fps", "-i", pattern,
-                "-c:v", "libvpx-vp9",
-                "-crf", "$vp9_crf", "-b:v", "0",
-                "-deadline", "good", "-cpu-used", "4",
-                "-pix_fmt", "yuv420p",
-                output])
+    cmd = [ffmpeg, "-y", "-framerate", "$fps", "-i", pattern]
+    vf = _tpad_vf(hold_sec)
+    isempty(vf) || append!(cmd, ["-vf", vf])
+    append!(cmd, ["-c:v", "libvpx-vp9",
+                  "-crf", "$vp9_crf", "-b:v", "0",
+                  "-deadline", "good", "-cpu-used", "4",
+                  "-pix_fmt", "yuv420p",
+                  output])
+    return Cmd(cmd)
 end
 
 function _build_gif_command(ffmpeg::String, pattern::String, fps::Int,
-                            resolution::Tuple{Int,Int}, output::String)
+                            resolution::Tuple{Int,Int}, output::String; hold_sec::Real=1.5)
     w, h = resolution
-    vf = "fps=$fps,scale=$w:$h:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse"
+    chain = "fps=$fps,scale=$w:$h:flags=lanczos"
+    tp = _tpad_vf(hold_sec)
+    isempty(tp) || (chain *= ",$tp")   # clone held ends before palette split so both see them
+    vf = "$chain,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse"
     return Cmd([ffmpeg, "-y",
                 "-framerate", "$fps", "-i", pattern,
                 "-vf", vf,
@@ -248,22 +267,28 @@ function _build_gif_command(ffmpeg::String, pattern::String, fps::Int,
 end
 
 """
-    ffmpegcall(output_dir, output_path, fps, resolution, quality)
+    ffmpegcall(output_dir, output_path, fps, resolution, quality; hold=true)
 
-Combine rendered frames in `output_dir` into an MP4 or GIF at `output_path`.
+Combine rendered frames in `output_dir` into an MP4, WebM or GIF at `output_path`.
+
+`hold` pads a held (cloned) first and last frame onto the video: `true` → 1.5 s at
+each end (default), `false` (or `0`) → none, a number → that many seconds. Applies
+to all three formats.
 """
 function ffmpegcall(
     output_dir,
     output_path::String="mobius.mp4",
     fps::Int=30,
     resolution::Tuple{Int,Int}=(1280, 720),
-    quality::Symbol=:high,
+    quality::Symbol=:high;
+    hold::Union{Bool,Real}=true,
 )
     pattern = detect_frame_pattern(output_dir)
     ffmpeg  = "ffmpeg"
     success(`which $ffmpeg`) ||
         throw(ErrorException("FFmpeg not found. Please install FFmpeg and ensure it is in PATH."))
 
+    hold_sec = _hold_seconds(hold)
     actual_output = output_path
     cmd = if endswith(output_path, ".mp4")
         encoder = _h264_encoder()
@@ -271,14 +296,14 @@ function ffmpegcall(
             actual_output = splitext(output_path)[1] * ".gif"
             @warn "No H.264 software encoder (libx264/libopenh264) in this FFmpeg build; \
                    writing GIF instead." gif = actual_output
-            _build_gif_command(ffmpeg, pattern, fps, resolution, actual_output)
+            _build_gif_command(ffmpeg, pattern, fps, resolution, actual_output; hold_sec=hold_sec)
         else
-            _build_mp4_command(ffmpeg, pattern, fps, output_path, quality, encoder)
+            _build_mp4_command(ffmpeg, pattern, fps, output_path, quality, encoder; hold_sec=hold_sec)
         end
     elseif endswith(output_path, ".webm")
-        _build_webm_command(ffmpeg, pattern, fps, output_path, quality)
+        _build_webm_command(ffmpeg, pattern, fps, output_path, quality; hold_sec=hold_sec)
     elseif endswith(output_path, ".gif")
-        _build_gif_command(ffmpeg, pattern, fps, resolution, output_path)
+        _build_gif_command(ffmpeg, pattern, fps, resolution, output_path; hold_sec=hold_sec)
     else
         error("Unsupported output format '$(output_path)'. Use .mp4, .webm or .gif")
     end

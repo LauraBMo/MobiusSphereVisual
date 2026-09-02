@@ -25,6 +25,10 @@ Render a Möbius sphere animation in the style of “Möbius Transformations Rev
 `:ultra`, or `:film` (highest fidelity). Set `keep_temp=true` to retain the
 rendered frame directory alongside the exported video for debugging.
 
+`hold` pads a held (cloned) first and last frame onto the video: `true` → 1.5 s at
+each end (default), `false` (or `0`) → none, a number → that many seconds. Applies
+to every output format (mp4, webm, gif).
+
 Optional `sampling` NamedTuple or Dict overrides individual POV-Ray sampling fields.
 """
 function render_mobius_animation(
@@ -38,6 +42,7 @@ function render_mobius_animation(
     quality::Symbol=:high,
     sampling::Union{Nothing,NamedTuple,Dict}=nothing,
     keep_temp::Bool=false,
+    hold::Union{Bool,Real}=true,
     markers=nothing,
 )
     validated_v = validate_inputs(v, theta, t)
@@ -65,7 +70,7 @@ function render_mobius_animation(
         )
 
         povraycall(output_dir, ini_file)
-        final_output[] = ffmpegcall(output_dir, output_path, fps, validated_resolution, quality)
+        final_output[] = ffmpegcall(output_dir, output_path, fps, validated_resolution, quality; hold=hold)
 
         if keep_temp
             dest_dir = derived_temp_destination(output_path)
