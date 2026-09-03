@@ -195,10 +195,10 @@ The source lives in two files in `src/`:
 
 | File | Responsibility |
 |------|---------------|
-| `MobiusSphereVisual.jl` | Module entry + core loop `_render_animation`; exports `render_scene`, `render_mobius_animation` (preset), `set_scene!`, `reset_scene!`, `scene_settings` |
+| `MobiusSphereVisual.jl` | Module entry + core loop `_render_animation`; exports `render_scene`, `render_mobius_animation` (preset), `set_scene!`, `reset_scene!`, `scene_settings`, `concat_clips` |
 | `Scene.jl` | Generic scene layer: global config, `set_scene!`/`render_scene`, POV-literal formatting, `@SCENE_OVERRIDES@` block |
 | `Emit.jl` | POV scene generation: template substitution (incl. `@SCENE_OVERRIDES@`/`@EXTRA_SDL@`), asset copying, quality presets |
-| `Render.jl` | Input validation, `povray` invocation, FFmpeg encoding, photon/radiosity blocks |
+| `Render.jl` | Input validation, `povray` invocation, FFmpeg encoding, `concat_clips` (join rendered clips into one video), photon/radiosity blocks |
 
 Scene assets live in `assets/` (the `mobius/` texture approach, no photons):
 - `mobius_template.pov` — main template: `@V_X@`/`@THETA@`/… motion placeholders,
