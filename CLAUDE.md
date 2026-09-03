@@ -13,9 +13,11 @@ The reference material is at the repo root:
 - `arnold.png`, `arnold1.png`, `arnold2.png` — stills from the film
 
 The package, `MobiusSphereVisual.jl`, renders animations of Möbius sphere
-transformations. The entry point is `render_mobius_animation(v, theta, t; ...)`,
-which generates a POV-Ray scene from `assets/mobius_template.pov`, renders
-frames with `povray`, and stitches them with `ffmpeg`.
+transformations. The generic entry point is `render_scene(v, theta, t; ...)`;
+`render_mobius_animation(v, theta, t; ...)` is a thin Arnold-look preset over it.
+Either generates a POV-Ray scene from `assets/mobius_template.pov`, renders
+frames with `povray`, and stitches them with `ffmpeg`. See **The generic scene
+layer** below.
 
 ## The physical setup we are reproducing
 
@@ -71,6 +73,34 @@ not a photon caustic. So:
   `assets/setup.inc`.
 - `d5_newlook.webm` (in `/tmp`) is the reference look; `/tmp/mobius_anim/` holds
   the standalone prototype this pipeline was ported from.
+
+## The generic scene layer (2026-09-03)
+
+MSVisual is a **generic** Möbius-visualization package: the Arnold look is just the
+default. The scene is configurable through two mechanisms, both keyed to the POV-Ray
+`#declare` names in `setup.inc`:
+
+- **`set_scene!(; A=2.0, C_Floor=(0.5,0.5,0.5), CamAngle=55, ShowAxes=false, …)`** —
+  process-global overrides (persist until `reset_scene!()`; read back with
+  `scene_settings()`). Keys mirror the POV names and must be in
+  `MobiusSphereVisual.SCENE_KEYS`. Values: scalars, 3-tuples (colour keys in
+  `SCENE_COLOR_KEYS` emit `rgb <…>`, others a bare vector `<…>`), booleans, or a raw
+  POV string (emitted verbatim).
+- **`render_scene(v, θ, t; scene=(;), floor/axes/glass/shell/glow, extra_sdl, <render
+  kwargs>)`** — the generic entry: per-call `scene` overrides (merged over the globals),
+  `Bool` object toggles (`nothing` ⇒ keep the global/default), and `extra_sdl` for custom
+  POV geometry (may reference `clock`/`Motion`/`SphC0`/`Vax`/`Th`/`Tv`/`PoleNow`).
+
+`render_mobius_animation` is a thin preset over `render_scene`; both share the core loop
+`_render_animation`. **How it reaches POV:** `Scene.jl` builds an override block that
+Emit.jl injects at `@SCENE_OVERRIDES@`, placed in the template BEFORE `#include
+"setup.inc"` — whose every parameter is now `#ifndef`-guarded, so a set value wins and an
+unset one keeps the Arnold default. Custom SDL goes to `@EXTRA_SDL@`; the assembly is
+wrapped in `#if (ShowFloor)` … toggles.
+
+**To add a knob:** add an `#ifndef`-guarded `#declare` in `setup.inc` AND its name to
+`SCENE_KEYS` in `Scene.jl` (plus `SCENE_COLOR_KEYS` if it's a colour). Those two lists
+must stay in sync.
 
 ## Iteration workflow
 
@@ -165,15 +195,18 @@ The source lives in two files in `src/`:
 
 | File | Responsibility |
 |------|---------------|
-| `MobiusSphereVisual.jl` | Module entry; exports `render_mobius_animation` |
-| `Emit.jl` | POV scene generation: template substitution, asset copying, quality presets |
+| `MobiusSphereVisual.jl` | Module entry + core loop `_render_animation`; exports `render_scene`, `render_mobius_animation` (preset), `set_scene!`, `reset_scene!`, `scene_settings` |
+| `Scene.jl` | Generic scene layer: global config, `set_scene!`/`render_scene`, POV-literal formatting, `@SCENE_OVERRIDES@` block |
+| `Emit.jl` | POV scene generation: template substitution (incl. `@SCENE_OVERRIDES@`/`@EXTRA_SDL@`), asset copying, quality presets |
 | `Render.jl` | Input validation, `povray` invocation, FFmpeg encoding, photon/radiosity blocks |
 
 Scene assets live in `assets/` (the `mobius/` texture approach, no photons):
-- `mobius_template.pov` — main template with `@V_X@`, `@THETA@`, … placeholders;
-  clock-driven Möbius motion
+- `mobius_template.pov` — main template: `@V_X@`/`@THETA@`/… motion placeholders,
+  `@SCENE_OVERRIDES@` (settable globals, injected before setup.inc) + `@EXTRA_SDL@`
+  (custom SDL), `#if (Show*)` assembly toggles; clock-driven Möbius motion
 - `math.inc` — `SU`/`SV` inverse-stereographic projection + grid `Line` helper
-- `setup.inc` — palette, patch/wire masks, material tuning
+- `setup.inc` — settable globals, all `#ifndef`-guarded (geometry, camera/`SphC0`,
+  palette, material, `Show*` toggles) + patch/wire masks
 - `textures.inc` — floor, glass, rainbow patch, wire, glow textures
 - `objects.inc` — `FloorPlane`, `GlassBall`, `ProjectionShell`, `AxisPin`, `GlowDot` macros
 

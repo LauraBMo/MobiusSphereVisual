@@ -56,6 +56,8 @@ function generate_pov_scene(
     t::Vector{Float64},
     output_dir::String;
     global_settings_extra::AbstractString="",
+    scene_overrides::AbstractString="",
+    extra_sdl::AbstractString="",
     markers=nothing,
 )
     template_path = joinpath(ASSETS_DIR, "mobius_template.pov")
@@ -72,6 +74,8 @@ function generate_pov_scene(
     pov_code = replace(
         template,
         "@GLOBAL_SETTINGS_EXTRA@" => global_settings_extra,
+        "@SCENE_OVERRIDES@" => scene_overrides,
+        "@EXTRA_SDL@" => extra_sdl,
         "@MARKERS@" => markers_pov(markers),
         "@V_X@" => string(v[1]),
         "@V_Y@" => string(v[3]),
@@ -135,6 +139,8 @@ function generate_pov(
     resolution::Tuple{Int,Int};
     quality::Symbol=:high,
     sampling::Union{Nothing,NamedTuple,Dict}=nothing,
+    scene_overrides::AbstractString="",
+    extra_sdl::AbstractString="",
     markers=nothing,
 )
     sampling = _normalize_sampling_overrides(sampling)
@@ -142,7 +148,11 @@ function generate_pov(
     gs_extra = global_settings_extra(settings)
 
     ini_file = generate_pov_ini(output_dir, nframes, resolution; settings=settings)
-    scene    = generate_pov_scene(v, theta, t, output_dir; global_settings_extra=gs_extra, markers=markers)
+    scene    = generate_pov_scene(v, theta, t, output_dir;
+                                  global_settings_extra=gs_extra,
+                                  scene_overrides=scene_overrides,
+                                  extra_sdl=extra_sdl,
+                                  markers=markers)
     return ini_file, scene
 end
 

@@ -10,6 +10,7 @@
 
 #include "transforms.inc"      // Axis_Rotate_Trans (POV-Ray standard include)
 #include "math.inc"
+@SCENE_OVERRIDES@              // Emit.jl: #declares from set_scene!/render_scene, BEFORE setup.inc so its #ifndef guards yield
 #include "setup.inc"
 #include "textures.inc"
 #include "objects.inc"
@@ -21,7 +22,7 @@ global_settings { assumed_gamma 1.0 }
 #declare Th  = @THETA@;
 #declare Tv  = <@T_X@, @T_Y@, @T_Z@>;
 
-#declare SphC0    = <0, 1.0, 0>;      // rest sphere centre (radius 1, sits on the floor)
+// SphC0 (rest sphere centre, radius 1, sits on the floor) is a settable global — see setup.inc.
 
 // ---------- clock-driven motion: phase 1 rotates about the centre, phase 2 translates ----------
 #if (clock <= 0.5)
@@ -47,14 +48,13 @@ global_settings { assumed_gamma 1.0 }
 // Admissibility (paper) keeps this above the floor; the sphere's lower cap may dip below.
 #declare PoleNow = SphCNow + <0, 1, 0>;
 
-// ---------- camera ----------
-// Edit CamLoc to move the camera; the axis labels read it too, so they always face you.
-#declare CamLoc = <8.5, 3.5, 4.5>;
+// ---------- camera (CamLoc / CamLook / CamAngle are settable globals — see setup.inc; ----------
+// the axis labels read CamLoc too, so they always face the camera) ----------
 camera {
   location CamLoc
-  look_at  <0, 0.7, 0>
+  look_at  CamLook
   right x * image_width/image_height
-  angle 42
+  angle CamAngle
 }
 
 // ---------- lights (projector follows the moving north pole) ----------
@@ -70,12 +70,13 @@ sky_sphere {
   }
 }
 
-// ---------- assembly ----------
-FloorPlane()
-CoordAxes(2.0, 2.3, CamLoc)                     // static gold Re/Im/vertical reference axes
-union { GlassBall(SphC0, 1)           transform { Motion } }
-union { ProjectionShell(SphC0, 1.001) transform { Motion } }
-GlowDot(PoleNow, 0.045)
+// ---------- assembly (each built-in is behind a Show* toggle — see setup.inc) ----------
+#if (ShowFloor) FloorPlane() #end
+#if (ShowAxes)  CoordAxes(AxisLen, AxisVtop, CamLoc) #end   // static gold Re/Im/vertical reference axes
+#if (ShowGlass) union { GlassBall(SphC0, 1)           transform { Motion } } #end
+#if (ShowShell) union { ProjectionShell(SphC0, 1.001) transform { Motion } } #end
+#if (ShowGlow)  GlowDot(PoleNow, 0.045) #end
 
-// ---------- point markers (base points and their images), injected by Emit.jl ----------
+// ---------- point markers + custom SDL, injected by Emit.jl ----------
 @MARKERS@
+@EXTRA_SDL@

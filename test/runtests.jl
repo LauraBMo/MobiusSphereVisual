@@ -124,22 +124,7 @@ end
     println("  ✓  rotation_axis_angle")
 end
 
-# Optional: Nemo / CalciumField (skip gracefully if Nemo not in env)
-if get(ENV, "TEST_NEMO", "1") != "0"
-    try
-        @eval using Nemo
-        @testset "Nemo extension loaded" begin
-            C = CalciumField(extended=true)
-            z = C(1) // C(2) + onei(C) // C(3)
-            # __normalize should now call Nemo.complex_normal_form
-            zn = MobiusSphere.__normalize(z)
-            @test zn isa Nemo.CalciumFieldElem
-            println("  ✓  MobiusSphereNemoExt loaded; __normalize dispatches to Nemo")
-        end
-    catch e
-        @warn "Skipping Nemo tests (Nemo not available: $e)"
-    end
-end
+# (The Nemo/CalciumField extension was dropped 2026-09-03 — the whole suite is Nemo-free.)
 
 # ── PR-2: MobiusSphereVisual ──────────────────────────────────────────────────
 println("\n═══════════════════════════════════════")
@@ -229,6 +214,70 @@ end
     @test MobiusSphereVisual.derived_temp_destination("/tmp/foo.mp4")  == "/tmp/foo_frames"
     @test MobiusSphereVisual.derived_temp_destination("/out/bar.gif")  == "/out/bar_frames"
     println("  ✓  derived_temp_destination")
+end
+
+# ── Generic scene layer (Scene.jl) ────────────────────────────────────────────
+@testset "Scene config: set_scene!/reset_scene!/scene_settings" begin
+    reset_scene!()
+    @test scene_settings() == Dict{Symbol,Any}()
+    set_scene!(A = 2.2, C_Floor = (0.6, 0.3, 0.3), ShowAxes = false)
+    s = scene_settings()
+    @test s[:A] == 2.2
+    @test s[:C_Floor] == (0.6, 0.3, 0.3)
+    @test s[:ShowAxes] == false
+    # unknown key warns and is ignored
+    @test_logs (:warn, r"unknown scene key") set_scene!(NoSuchKey = 1)
+    @test !haskey(scene_settings(), :NoSuchKey)
+    reset_scene!()
+    @test isempty(scene_settings())
+    println("  ✓  set_scene! / reset_scene! / scene_settings + unknown-key warning")
+end
+
+@testset "Scene POV-literal formatting" begin
+    lit = MobiusSphereVisual._pov_literal
+    @test lit(:A, 2.0)                    == "2.0"
+    @test lit(:ShowAxes, false)           == "false"
+    @test lit(:ShowFloor, true)           == "true"
+    @test lit(:C_Floor, (0.6, 0.3, 0.3))  == "rgb <0.6, 0.3, 0.3>"   # colour key → rgb
+    @test lit(:CamLoc, (8, 4, 5))         == "<8, 4, 5>"             # vector key → bare <>
+    @test lit(:FilterAmt, "raw_pov_here") == "raw_pov_here"          # string emitted verbatim
+    @test_throws ArgumentError lit(:CamLoc, (1, 2))                  # wrong arity
+    blk = MobiusSphereVisual.scene_override_block(Dict{Symbol,Any}(:A => 2.2, :ShowAxes => false))
+    @test occursin("#declare A = 2.2;", blk)
+    @test occursin("#declare ShowAxes = false;", blk)
+    @test MobiusSphereVisual.scene_override_block(Dict{Symbol,Any}()) == ""
+    println("  ✓  _pov_literal (scalar/bool/colour/vector/string) + override block")
+end
+
+@testset "toggle kwargs map to Show* globals" begin
+    reset_scene!()
+    ov = MobiusSphereVisual._merge_scene_overrides((;);
+             floor=nothing, axes=false, glass=nothing, shell=nothing, glow=true)
+    @test ov[:ShowAxes] == false
+    @test ov[:ShowGlow] == true
+    @test !haskey(ov, :ShowFloor)   # nothing ⇒ leave at global/default
+    reset_scene!()
+    println("  ✓  render_scene toggles → ShowFloor/ShowAxes/… overrides")
+end
+
+@testset "render_scene injects overrides + extra_sdl into the .pov" begin
+    reset_scene!()
+    dir = mktempdir()
+    block = MobiusSphereVisual.scene_override_block(
+        Dict{Symbol,Any}(:A => 2.2, :C_Floor => (0.6, 0.3, 0.3)))
+    scene_path = MobiusSphereVisual.generate_pov_scene(
+        [0.0, 0.0, 1.0], π/4, [0.0, 0.0, 0.0], dir;
+        scene_overrides = block,
+        extra_sdl = "sphere { <1,0,0>, 0.2 }")
+    pov = read(scene_path, String)
+    @test occursin("#declare A = 2.2;", pov)
+    @test occursin("#declare C_Floor = rgb <0.6, 0.3, 0.3>;", pov)
+    @test occursin("sphere { <1,0,0>, 0.2 }", pov)
+    # the override block lands BEFORE the setup.inc include, so its #ifndef guards yield
+    @test first(findfirst("#declare A = 2.2;", pov)) <
+          first(findfirst("#include \"setup.inc\"", pov))
+    println("  ✓  generate_pov_scene threads @SCENE_OVERRIDES@ / @EXTRA_SDL@")
+    rm(dir; recursive=true)
 end
 
 # ── End-to-end render (requires povray + ffmpeg) ──────────────────────────────
