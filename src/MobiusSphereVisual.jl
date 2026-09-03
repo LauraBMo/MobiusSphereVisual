@@ -4,7 +4,7 @@ using Printf
 using LinearAlgebra
 using FileIO
 
-export render_mobius_animation, render_scene, set_scene!, reset_scene!, scene_settings
+export render_mobius_animation, render_scene, set_scene!, reset_scene!, scene_settings, concat_clips
 
 const ASSETS_DIR = joinpath(@__DIR__, "..", "assets")
 

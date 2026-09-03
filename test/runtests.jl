@@ -310,4 +310,27 @@ else
     @warn "Skipping render test — not found in PATH: $(join(missing, ", "))"
 end
 
+if has_ffmpeg
+    @testset "concat_clips joins clips in order" begin
+        d = mktempdir()
+        mkclip(name, dur) = (f = joinpath(d, name);
+            run(pipeline(`ffmpeg -y -f lavfi -i testsrc=size=32x32:rate=2:duration=$dur $f`,
+                         stdout=devnull, stderr=devnull)); f)
+        nframes(f) = parse(Int, strip(read(
+            `ffprobe -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_frames -of csv=p=0 $f`,
+            String)))
+        a = mkclip("a.gif", 1); b = mkclip("b.gif", 1)
+        out = concat_clips([a, b], joinpath(d, "cat.gif"))
+        @test isfile(out)
+        @test nframes(out) == nframes(a) + nframes(b)       # every frame, in order
+        one = concat_clips([a], joinpath(d, "one.gif"))     # single part → copy
+        @test isfile(one) && nframes(one) == nframes(a)
+        @test_throws ArgumentError concat_clips(String[], joinpath(d, "x.gif"))
+        @test_throws ArgumentError concat_clips([joinpath(d, "nope.gif")], joinpath(d, "y.gif"))
+        println("  ✓  concat_clips: $(nframes(a))+$(nframes(b)) → $(nframes(out)) frames")
+    end
+else
+    @warn "Skipping concat_clips test — ffmpeg not in PATH"
+end
+
 println("\nAll done.")

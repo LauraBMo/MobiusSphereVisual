@@ -330,3 +330,82 @@ function derived_temp_destination(output_path::AbstractString)
     stem, _ = splitext(basename(output_path))
     return joinpath(dirname(output_path), "$(stem)_frames")
 end
+
+# ── Clip concatenation (multi-render) ─────────────────────────────────────────
+
+# GIFs cannot be stream-copied, so join by decoding every input, concatenating, and
+# regenerating a single shared palette (concat filter → palettegen/paletteuse).
+function _concat_gif_cmd(ffmpeg::String, parts::Vector{String}, output::String)
+    inputs = String[]
+    for p in parts
+        append!(inputs, ["-i", p])
+    end
+    n = length(parts)
+    labels = join("[$i:v]" for i in 0:n-1)
+    filter = "$(labels)concat=n=$n:v=1[cat];" *
+             "[cat]split[s0][s1];[s0]palettegen=stats_mode=diff[p];[s1][p]paletteuse"
+    return Cmd([ffmpeg, "-y", inputs..., "-filter_complex", filter, output])
+end
+
+"""
+    concat_clips(parts, output) -> actual_output
+
+Join already-rendered clip files `parts`, in order, into a single `output`. Each part
+keeps whatever held ends (`hold`) it was rendered with, so the clips read as a sequence
+with a natural beat between them. All parts must share format, resolution and codec —
+which they do when rendered with the same settings.
+
+`.mp4`/`.webm` are joined **losslessly** with FFmpeg's concat demuxer (`-c copy`, no
+re-encode); `.gif` is concatenated through the concat filter with a fresh shared palette.
+A single-element `parts` is just copied to `output`. Returns the path actually written.
+"""
+function concat_clips(parts::AbstractVector{<:AbstractString}, output::AbstractString)
+    isempty(parts) && throw(ArgumentError("concat_clips: no parts to join"))
+    absparts = String[]
+    for p in parts
+        ap = abspath(String(p))
+        isfile(ap) || throw(ArgumentError("concat_clips: missing part $ap"))
+        push!(absparts, ap)
+    end
+
+    ffmpeg = "ffmpeg"
+    success(`which $ffmpeg`) ||
+        throw(ErrorException("FFmpeg not found. Please install FFmpeg and ensure it is in PATH."))
+
+    output = abspath(String(output))
+    mkpath(dirname(output))
+
+    if length(absparts) == 1
+        cp(absparts[1], output; force=true)
+        return output
+    end
+
+    ext = lowercase(splitext(output)[2])
+    if ext == ".gif"
+        try
+            run(_concat_gif_cmd(ffmpeg, absparts, output))
+            @info "Concatenated $(length(absparts)) clips → $output"
+        catch e
+            @error "FFmpeg gif concat failed" exception=(e, catch_backtrace())
+            rethrow(e)
+        end
+    else
+        # concat demuxer: a list file of `file '<abs path>'` lines, stream-copied.
+        listfile = tempname() * ".txt"
+        open(listfile, "w") do io
+            for p in absparts
+                println(io, "file '", p, "'")
+            end
+        end
+        try
+            run(`$ffmpeg -y -f concat -safe 0 -i $listfile -c copy $output`)
+            @info "Concatenated $(length(absparts)) clips → $output"
+        catch e
+            @error "FFmpeg concat-demuxer join failed" exception=(e, catch_backtrace())
+            rethrow(e)
+        finally
+            rm(listfile; force=true)
+        end
+    end
+    return output
+end
